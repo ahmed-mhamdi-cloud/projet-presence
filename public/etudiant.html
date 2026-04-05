@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Présence Étudiant</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 40px; background-color: #e9ecef; }
+        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .success { color: #28a745; font-size: 22px; font-weight: bold; }
+        input { padding: 10px; width: 80%; margin: 15px 0; font-size: 16px; border: 1px solid #ccc; border-radius: 5px;}
+        button { padding: 12px 25px; background-color: #007bff; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Validation</h1>
+        <p id="message">Analyse du code...</p>
+        
+        <div id="formulaire" style="display: none;">
+            <input type="text" id="nomEtudiant" placeholder="Entrez votre Prénom et Nom">
+            <br>
+            <button onclick="envoyerPresence()">Je suis présent !</button>
+        </div>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+
+        const messageDiv = document.getElementById('message');
+        const formulaireDiv = document.getElementById('formulaire');
+
+        if (token) {
+            messageDiv.innerHTML = `<span class="success">Code scanné ! ✅</span><br>Veuillez indiquer votre nom.`;
+            formulaireDiv.style.display = "block";
+        } else {
+            messageDiv.innerHTML = `<span class="error">❌ Erreur : Aucun code détecté.</span>`;
+        }
+
+        function envoyerPresence() {
+            const nom = document.getElementById('nomEtudiant').value;
+            if (nom === "") {
+                alert("Veuillez entrer votre nom !");
+                return;
+            }
+
+            fetch('/valider-presence', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nom: nom, token: token })
+            })
+            .then(response => response.json())
+            .then(data => {
+                formulaireDiv.style.display = "none";
+                messageDiv.innerHTML = `<span class="success">🎉 ${data.message}</span>`;
+            })
+            .catch(error => alert("Erreur de communication."));
+        }
+    </script>
+</body>
+</html>

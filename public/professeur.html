@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Interface Professeur - Présences</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; background-color: #f8f9fa; padding: 20px; }
+        .flex-container { display: flex; justify-content: space-around; align-items: flex-start; flex-wrap: wrap; margin-top: 30px; }
+        .box { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); min-width: 300px; }
+        #qrcode { display: flex; justify-content: center; margin: 20px 0; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 10px; border-bottom: 1px solid #ddd; text-align: left; }
+        th { background-color: #007bff; color: white; }
+        .badge { background: #28a745; color: white; padding: 5px 10px; border-radius: 20px; font-size: 0.8em; }
+    </style>
+</head>
+<body>
+    <h1>Tableau de Bord Professeur</h1>
+
+    <div class="flex-container">
+        <div class="box">
+            <h2>Scanner pour marquer la présence</h2>
+            <p>Le code change toutes les 10 secondes</p>
+            <div id="qrcode"></div>
+            <h3>Prochain code dans : <span id="timer">10</span>s</h3>
+        </div>
+
+        <div class="box">
+            <h2>Étudiants Présents <span id="count" class="badge">0</span></h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Heure</th>
+                        <th>Nom de l'étudiant</th>
+                    </tr>
+                </thead>
+                <tbody id="listeBody">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const qrContainer = document.getElementById("qrcode");
+        let qrcode = new QRCode(qrContainer, { width: 200, height: 200 });
+
+        function genererNouveauCode() {
+            const token = "token_" + Math.random().toString(36).substr(2, 9);
+            const url = "http://" + window.location.host + "/etudiant.html?token=" + token; 
+            qrcode.makeCode(url);
+        }
+
+        // Fonction pour aller chercher la liste sur le serveur
+        function mettreAJourListe() {
+            fetch('/liste')
+                .then(res => res.json())
+                .then(data => {
+                    const body = document.getElementById('listeBody');
+                    document.getElementById('count').innerText = data.length;
+                    body.innerHTML = ""; // On vide pour reconstruire
+                    data.reverse().forEach(p => { // Les plus récents en haut
+                        body.innerHTML += `<tr><td>${p.heure}</td><td><b>${p.nom}</b></td></tr>`;
+                    });
+                });
+        }
+
+        // Initialisation
+        genererNouveauCode();
+        mettreAJourListe();
+
+        // Timer de 10s
+        let temps = 10;
+        setInterval(() => {
+            temps--;
+            document.getElementById('timer').innerText = temps;
+            if (temps <= 0) {
+                genererNouveauCode();
+                temps = 10;
+            }
+            mettreAJourListe(); // On vérifie les nouveaux arrivants chaque seconde
+        }, 1000);
+    </script>
+</body>
+</html>
