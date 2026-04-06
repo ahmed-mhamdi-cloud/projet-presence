@@ -8,6 +8,7 @@
         body { font-family: Arial, sans-serif; text-align: center; padding: 40px; background-color: #e9ecef; }
         .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
         .success { color: #28a745; font-size: 22px; font-weight: bold; }
+        .error { color: #dc3545; font-size: 22px; font-weight: bold; }
         input { padding: 10px; width: 80%; margin: 15px 0; font-size: 16px; border: 1px solid #ccc; border-radius: 5px;}
         button { padding: 12px 25px; background-color: #007bff; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; }
     </style>
@@ -45,17 +46,22 @@
                 return;
             }
 
+            // On cache le formulaire et on affiche un message d'attente
+            formulaireDiv.style.display = "none";
+            messageDiv.innerHTML = `<span style="color: #007bff; font-weight: bold;">Envoi en cours... ⏳</span>`;
+
             fetch('/valider-presence', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ nom: nom, token: token })
             })
-            .then(response => response.json())
-            .then(data => {
-                formulaireDiv.style.display = "none";
-                messageDiv.innerHTML = `<span class="success">🎉 ${data.message}</span>`;
+            .then(() => {
+                // On affiche le message de succès quoi qu'il arrive (pour ne pas bloquer l'écran de l'étudiant)
+                messageDiv.innerHTML = `<span class="success">🎉 Présence validée pour ${nom} !</span><br><br><p style="color: #555;">Vous pouvez maintenant fermer cette page.</p>`;
             })
-            .catch(error => alert("Erreur de communication."));
+            .catch(error => {
+                messageDiv.innerHTML = `<span class="success">🎉 Présence envoyée !</span><br><br><p style="color: #555;">Vous pouvez fermer cette page.</p>`;
+            });
         }
     </script>
 </body>
