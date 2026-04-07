@@ -7,7 +7,14 @@
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; background-color: #f8f9fa; padding: 20px; }
         .flex-container { display: flex; justify-content: space-around; align-items: flex-start; flex-wrap: wrap; margin-top: 30px; }
-        .box { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); min-width: 300px; }
+        .box { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); min-width: 300px; margin-bottom: 20px; }
+        
+        /* Nouveau style pour la boîte de configuration */
+        .config-box { background: #e9ecef; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: inline-block; text-align: left; }
+        button { background-color: #007bff; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        button:hover { background-color: #0056b3; }
+        select, input { padding: 5px; border-radius: 4px; border: 1px solid #ccc; }
+
         #qrcode { display: flex; justify-content: center; margin: 20px 0; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th, td { padding: 10px; border-bottom: 1px solid #ddd; text-align: left; }
@@ -18,8 +25,24 @@
 <body>
     <h1>Tableau de Bord Professeur</h1>
 
+    <div class="config-box">
+        <h3 style="margin-top: 0;">⚙️ Configuration du cours</h3>
+        <label>Matière :</label>
+        <select id="choixMatiere">
+            <option value="Mathématiques">Mathématiques</option>
+            <option value="Informatique">Informatique</option>
+            <option value="Physique">Physique</option>
+            <option value="Français">Français</option>
+        </select>
+
+        <label style="margin-left: 15px;">Date :</label>
+        <input type="date" id="dateCours">
+
+        <button onclick="chargerListeAppel()" style="margin-left: 15px;">📋 Démarrer l'appel</button>
+    </div>
+
     <div class="flex-container">
-        <div class="box">
+        <div class="box" id="qrBox" style="display: none;">
             <h2>Scanner pour marquer la présence</h2>
             <p>Le code change toutes les 10 secondes</p>
             <div id="qrcode"></div>
@@ -27,16 +50,17 @@
         </div>
 
         <div class="box">
-            <h2>Étudiants Présents <span id="count" class="badge">0</span></h2>
+            <h2>Liste d'appel <span id="count" class="badge">0 / 0</span></h2>
             <table>
                 <thead>
                     <tr>
                         <th>Heure</th>
                         <th>Nom de l'étudiant</th>
-                    </tr>
+                        <th>Statut</th> </tr>
                 </thead>
                 <tbody id="listeBody">
-                    </tbody>
+                    <tr><td colspan="3" style="text-align: center;">Veuillez démarrer l'appel pour afficher la liste.</td></tr>
+                </tbody>
             </table>
         </div>
     </div>
@@ -44,41 +68,105 @@
     <script>
         const qrContainer = document.getElementById("qrcode");
         let qrcode = new QRCode(qrContainer, { width: 200, height: 200 });
+        
+        let sessionDemarree = false;
+        let temps = 10;
+        let etudiantsTotal = 0;
+
+        // Pré-remplir automatiquement avec la date d'aujourd'hui
+        document.getElementById('dateCours').valueAsDate = new Date();
 
         function genererNouveauCode() {
             const token = "token_" + Math.random().toString(36).substr(2, 9);
-            const url = "http://" + window.location.host + "/etudiant.html?token=" + token; 
+            const url = "https://" + window.location.host + "/etudiant.html?token=" + token; 
             qrcode.makeCode(url);
         }
 
-        // Fonction pour aller chercher la liste sur le serveur
+        // NOUVEAU : Fonction pour charger la liste officielle depuis MongoDB
+        async function chargerListeAppel() {
+            const date = document.getElementById('dateCours').value;
+            if(!date) {
+                alert("Veuillez choisir une date !");
+                return;
+            }
+
+            try {
+                // 1. Demander la liste officielle au serveur
+                const reponse = await fetch('/liste-officielle');
+                const etudiants = await reponse.json();
+                
+                etudiantsTotal = etudiants.length;
+                document.getElementById('count').innerText = "0 / " + etudiantsTotal;
+
+                // 2. Afficher tout le monde en "Absent"
+                const body = document.getElementById('listeBody');
+                body.innerHTML = ""; 
+
+                etudiants.forEach(etudiant => {
+                    // On crée un ID unique sans espaces pour le retrouver (ex: ligne-ahmed-mhamdi)
+                    const idNom = etudiant.nom.replace(/\s+/g, '-'); 
+                    body.innerHTML += `
+                        <tr id="ligne-${idNom}">
+                            <td id="heure-${idNom}">--:--</td>
+                            <td><b>${etudiant.nom}</b></td>
+                            <td id="statut-${idNom}">🔴 Absent</td>
+                        </tr>
+                    `;
+                });
+
+                // 3. Activer le QR Code et lancer la vérification
+                document.getElementById('qrBox').style.display = "block";
+                sessionDemarree = true;
+                genererNouveauCode();
+                
+            } catch (erreur) {
+                console.error(erreur);
+                alert("Erreur lors du chargement de la liste. Vérifiez que votre serveur est en ligne !");
+            }
+        }
+
+        // MISE À JOUR : On vérifie qui a scanné pour changer son statut de rouge à vert
         function mettreAJourListe() {
+            if (!sessionDemarree) return; // Ne rien faire si le prof n'a pas cliqué sur "Démarrer"
+
             fetch('/liste')
                 .then(res => res.json())
                 .then(data => {
-                    const body = document.getElementById('listeBody');
-                    document.getElementById('count').innerText = data.length;
-                    body.innerHTML = ""; // On vide pour reconstruire
-                    data.reverse().forEach(p => { // Les plus récents en haut
-                        body.innerHTML += `<tr><td>${p.heure}</td><td><b>${p.nom}</b></td></tr>`;
+                    let presentsCompte = 0;
+
+                    data.forEach(presence => {
+                        const idNom = presence.nom.replace(/\s+/g, '-');
+                        const caseStatut = document.getElementById(`statut-${idNom}`);
+                        const caseHeure = document.getElementById(`heure-${idNom}`);
+
+                        // Si on trouve l'étudiant dans le tableau et qu'il est encore absent
+                        if (caseStatut && caseStatut.innerText.includes("Absent")) {
+                            caseStatut.innerText = "🟢 Présent";
+                            caseHeure.innerText = presence.heure;
+                        }
+
+                        // On compte tous ceux qui sont affichés en "Présent"
+                        if (caseStatut && caseStatut.innerText.includes("Présent")) {
+                            presentsCompte++;
+                        }
                     });
+
+                    // Mettre à jour le badge (ex: 2 / 4)
+                    document.getElementById('count').innerText = presentsCompte + " / " + etudiantsTotal;
                 });
         }
 
-        // Initialisation
-        genererNouveauCode();
-        mettreAJourListe();
-
-        // Timer de 10s
-        let temps = 10;
+        // Timer de 10s et vérification automatique des présences
         setInterval(() => {
-            temps--;
-            document.getElementById('timer').innerText = temps;
-            if (temps <= 0) {
-                genererNouveauCode();
-                temps = 10;
+            if (sessionDemarree) {
+                temps--;
+                document.getElementById('timer').innerText = temps;
+                if (temps <= 0) {
+                    genererNouveauCode();
+                    temps = 10;
+                }
+                mettreAJourListe(); // On interroge la base de données toutes les secondes
             }
-            mettreAJourListe(); // On vérifie les nouveaux arrivants chaque seconde
         }, 1000);
     </script>
 </body>
