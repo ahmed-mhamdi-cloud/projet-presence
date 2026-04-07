@@ -2,84 +2,72 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Portail Professeur - Archives</title>
+    <title>Portail Professeur</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
-        :root { --primary: #4e54c8; --secondary: #8f94fb; --light: #f4f7f6; }
-        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; text-align: center; margin: 0; }
-        header { background: linear-gradient(to right, var(--primary), var(--secondary)); color: white; padding: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .container { max-width: 1000px; margin: 20px auto; padding: 20px; }
-        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        button { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th { background: var(--primary); color: white; padding: 12px; }
-        td { padding: 12px; border-bottom: 1px solid #ddd; }
-        .status-present { color: #28a745; font-weight: bold; }
-        .status-absent { color: #dc3545; font-weight: bold; }
+        body { font-family: sans-serif; text-align: center; background: #f0f2f5; padding: 20px; }
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 500px; margin: auto; }
+        #msgInfo { display: none; color: white; background: #28a745; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; }
+        select, input, button { width: 90%; padding: 12px; margin: 10px 0; border-radius: 6px; border: 1px solid #ddd; }
+        button { background: #4e54c8; color: white; border: none; cursor: pointer; }
     </style>
 </head>
 <body>
-    <header><h1>🎓 Tableau de Bord Professeur</h1></header>
-    <div class="container">
-        <div class="card">
-            <input type="text" id="matiere" placeholder="Nom de la matière" value="Mathématiques">
-            <input type="date" id="dateCours">
-            <button onclick="demarrerAppel()">🚀 Démarrer et Enregistrer</button>
-        </div>
+    <div id="msgInfo"></div>
+    <div class="card">
+        <h2>🚀 Démarrer une Séance</h2>
+        <select id="matiere">
+            <option value="Mathématiques">Mathématiques</option>
+            <option value="Physique">Physique</option>
+            <option value="Autre">Nouvelle Matière...</option>
+        </select>
+        <input type="text" id="nomAutre" placeholder="Nom de la matière" style="display:none;">
+        
+        <select id="typeSeance">
+            <option value="Séance 1">Séance 1</option>
+            <option value="Séance 2">Séance 2</option>
+        </select>
+        
+        <input type="date" id="dateS">
+        <button onclick="lancer()">Démarrer l'appel</button>
+        <br><br>
+        <a href="archives.html">📂 Voir les Archives</a>
+    </div>
 
-        <div id="qrSection" style="display:none;" class="card">
-            <div id="qrcode" style="display: flex; justify-content: center; margin-bottom: 10px;"></div>
-            <p>Code actif - Mise à jour auto</p>
-        </div>
-
-        <div class="card">
-            <h2>Liste en direct</h2>
-            <table>
-                <thead><tr><th>Heure</th><th>Étudiant</th><th>Statut</th></tr></thead>
-                <tbody id="tableBody"></tbody>
-            </table>
-        </div>
+    <div id="qrBox" class="card" style="display:none; margin-top:20px;">
+        <div id="qrcode" style="display:flex; justify-content:center;"></div>
+        <p id="qrTxt"></p>
     </div>
 
     <script>
-        document.getElementById('dateCours').valueAsDate = new Date();
-        let qrcode = new QRCode(document.getElementById("qrcode"), { width: 200, height: 200 });
+        document.getElementById('dateS').valueAsDate = new Date();
+        document.getElementById('matiere').onchange = function() {
+            document.getElementById('nomAutre').style.display = (this.value === 'Autre') ? 'block' : 'none';
+        };
 
-        async function demarrerAppel() {
-            const matiere = document.getElementById('matiere').value;
-            const date = document.getElementById('dateCours').value;
+        async function lancer() {
+            const mat = document.getElementById('matiere').value === 'Autre' ? document.getElementById('nomAutre').value : document.getElementById('matiere').value;
+            const type = document.getElementById('typeSeance').value;
+            const date = document.getElementById('dateS').value;
 
-            // 1. On crée la séance dans MongoDB
             await fetch('/demarrer-seance', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ matiere, date })
+                body: JSON.stringify({ matiere: mat, date: date, typeSeance: type })
             });
 
-            // 2. On affiche le QR Code
-            document.getElementById('qrSection').style.display = 'block';
-            genererQR();
-            
-            // 3. On charge le tableau
-            chargerTableau();
-            setInterval(chargerTableau, 3000); // Rafraîchir toutes les 3s
-            setInterval(genererQR, 10000); // Nouveau QR toutes les 10s
-        }
+            // Message de confirmation
+            const msg = document.getElementById('msgInfo');
+            msg.innerText = `✅ ${type} démarrée pour ${mat} !`;
+            msg.style.display = 'block';
+            setTimeout(() => msg.style.display = 'none', 4000);
 
-        function genererQR() {
-            const token = Math.random().toString(36).substr(2, 9);
-            qrcode.makeCode("https://" + window.location.host + "/etudiant.html?token=" + token);
-        }
-
-        async function chargerTableau() {
-            const res = await fetch('/liste-officielle');
-            const etudiants = await res.json();
-            const body = document.getElementById('tableBody');
-            body.innerHTML = "";
-            
-            etudiants.forEach(e => {
-                body.innerHTML += `<tr><td>--:--</td><td>${e.nom}</td><td class="status-absent">🔴 Absent</td></tr>`;
-            });
+            // QR Code
+            document.getElementById('qrBox').style.display = 'block';
+            document.getElementById('qrTxt').innerText = `Scan pour : ${mat} (${type})`;
+            new QRCode(document.getElementById("qrcode"), { width: 180, height: 180 }).makeCode(
+                `https://${window.location.host}/etudiant.html?m=${mat}&d=${date}&t=${type}`
+            );
         }
     </script>
 </body>
