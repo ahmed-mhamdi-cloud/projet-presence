@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Archives des Présences - ESPRIT</title>
+    <style>
+        :root { 
+            --primary: #4e54c8; 
+            --secondary: #8f94fb; 
+            --bg: #f4f7f6;
+            --present: #28a745;
+            --absent: #dc3545;
+        }
+        
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: var(--bg); 
+            margin: 0; 
+            padding: 0; 
+            color: #333;
+        }
+
+        header { 
+            background: linear-gradient(135deg, var(--primary), var(--secondary)); 
+            color: white; 
+            padding: 30px 20px; 
+            text-align: center; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .container { max-width: 1000px; margin: 30px auto; padding: 0 20px; }
+
+        .btn-back {
+            display: inline-block;
+            text-decoration: none;
+            background: white;
+            color: var(--primary);
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            transition: 0.3s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .btn-back:hover { transform: translateX(-5px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+
+        .seance-card { 
+            background: white; 
+            border-radius: 15px; 
+            padding: 25px; 
+            margin-bottom: 30px; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            border-left: 5px solid var(--primary);
+        }
+
+        .seance-info { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            border-bottom: 2px solid #eee;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        .seance-info h2 { margin: 0; color: var(--primary); font-size: 1.5rem; }
+        .seance-date { font-weight: bold; color: #666; background: #eee; padding: 5px 15px; border-radius: 20px; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th { text-align: left; padding: 12px; background: #f8f9fa; color: #555; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 1px; }
+        td { padding: 15px 12px; border-bottom: 1px solid #f0f0f0; }
+
+        .badge { padding: 5px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: bold; }
+        .badge-present { background: #e8f5e9; color: var(--present); }
+        .badge-absent { background: #ffebee; color: var(--absent); }
+
+        .no-data { text-align: center; padding: 50px; color: #999; font-style: italic; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>📂 Archives des Séances</h1>
+        <p>Historique complet des présences enregistrées</p>
+    </header>
+
+    <div class="container">
+        <a href="professeur.html" class="btn-back">⬅ Retour au Tableau de Bord</a>
+
+        <div id="archivesContainer">
+            <div class="no-data">Chargement des données depuis la base de données...</div>
+        </div>
+    </div>
+
+    <script>
+        async function chargerArchives() {
+            try {
+                // On récupère les données depuis la route /archives de votre serveur Render
+                const response = await fetch('/archives');
+                const seances = await response.json();
+                
+                const container = document.getElementById('archivesContainer');
+                
+                if (seances.length === 0) {
+                    container.innerHTML = '<div class="seance-card"><p class="no-data">Aucune séance n\'a encore été enregistrée.</p></div>';
+                    return;
+                }
+
+                container.innerHTML = ""; // On vide le message de chargement
+
+                // On boucle sur chaque séance trouvée dans MongoDB
+                seances.forEach(seance => {
+                    const card = document.createElement('div');
+                    card.className = 'seance-card';
+
+                    // Création du tableau des étudiants pour cette séance
+                    let lignesEtudiants = seance.etudiants.map(etudiant => `
+                        <tr>
+                            <td><strong>${etudiant.nom}</strong></td>
+                            <td>${etudiant.heure || "--:--"}</td>
+                            <td>
+                                <span class="badge ${etudiant.statut === 'Présent' ? 'badge-present' : 'badge-absent'}">
+                                    ${etudiant.statut === 'Présent' ? '✅ Présent' : '❌ Absent'}
+                                </span>
+                            </td>
+                        </tr>
+                    `).join('');
+
+                    card.innerHTML = `
+                        <div class="seance-info">
+                            <h2>📖 ${seance.matiere}</h2>
+                            <span class="seance-date">🗓 ${seance.date}</span>
+                        </div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Nom de l'étudiant</th>
+                                    <th>Heure de scan</th>
+                                    <th>Statut</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${lignesEtudiants}
+                            </tbody>
+                        </table>
+                    `;
+                    container.appendChild(card);
+                });
+
+            } catch (error) {
+                console.error("Erreur:", error);
+                document.getElementById('archivesContainer').innerHTML = 
+                    '<div class="seance-card" style="border-left-color:red;"><p class="no-data">❌ Erreur de connexion au serveur. Vérifiez vos logs Render.</p></div>';
+            }
+        }
+
+        // Lancer le chargement au démarrage de la page
+        chargerArchives();
+    </script>
+</body>
+</html>
