@@ -2,220 +2,85 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portail Professeur - Gestion des Présences</title>
+    <title>Portail Professeur - Archives</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
-        /* --- DÉCOR ET DESIGN --- */
-        :root {
-            --primary: #4e54c8;
-            --secondary: #8f94fb;
-            --success: #28a745;
-            --danger: #dc3545;
-            --light: #f4f7f6;
-            --dark: #2d3436;
-        }
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            text-align: center; 
-            background: linear-gradient(135deg, var(--light) 0%, #e0eafc 100%);
-            color: var(--dark);
-            margin: 0;
-            padding: 0;
-            min-height: 100vh;
-        }
-        header {
-            background: linear-gradient(to right, var(--primary), var(--secondary));
-            color: white;
-            padding: 20px 0;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            margin-bottom: 30px;
-        }
-        header h1 { margin: 0; font-size: 2em; letter-spacing: 1px; }
-        .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
-        
-        .config-box { 
-            background: white; padding: 25px; border-radius: 15px; 
-            box-shadow: 0 10px 20px rgba(0,0,0,0.05); margin-bottom: 30px; 
-            display: inline-block; text-align: left; border-left: 5px solid var(--primary);
-        }
-        .config-box h3 { margin-top: 0; color: var(--primary); }
-        .form-group { display: inline-block; margin-right: 20px; margin-bottom: 10px;}
-        label { font-weight: bold; margin-bottom: 5px; display: block; font-size: 0.9em; color: #555;}
-        select, input { padding: 10px; border-radius: 8px; border: 1px solid #ddd; outline: none; font-size: 1em;}
-        select:focus, input:focus { border-color: var(--primary); }
-        
-        button { 
-            background-color: var(--primary); color: white; border: none; 
-            padding: 12px 25px; border-radius: 8px; cursor: pointer; 
-            font-weight: bold; font-size: 1em; transition: transform 0.2s, background 0.3s;
-            box-shadow: 0 4px 6px rgba(78, 84, 200, 0.3);
-        }
-        button:hover { background-color: #3b3f9e; transform: translateY(-2px); }
-        
-        .flex-container { display: flex; justify-content: center; gap: 30px; align-items: flex-start; flex-wrap: wrap; }
-        .box { 
-            background: white; padding: 25px; border-radius: 15px; 
-            box-shadow: 0 10px 20px rgba(0,0,0,0.08); flex: 1; min-width: 320px; max-width: 500px;
-        }
-        .box h2 { border-bottom: 2px solid #eee; padding-bottom: 10px; margin-top: 0; font-size: 1.5em;}
-        
-        #qrcode { display: flex; justify-content: center; margin: 25px 0; background: #fff; padding: 15px; border-radius: 10px; border: 1px dashed #ccc;}
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; background: white; border-radius: 8px; overflow: hidden; }
-        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #eee; }
-        th { background-color: var(--primary); color: white; font-weight: 600; text-transform: uppercase; font-size: 0.9em;}
-        tr:hover { background-color: #f8f9fa; }
-        
-        .badge { background: var(--success); color: white; padding: 5px 12px; border-radius: 20px; font-size: 0.7em; vertical-align: middle; margin-left: 10px;}
-        .status-absent { color: var(--danger); font-weight: bold; }
-        .status-present { color: var(--success); font-weight: bold; }
-        #timer { font-weight: bold; color: var(--primary); font-size: 1.2em; }
+        :root { --primary: #4e54c8; --secondary: #8f94fb; --light: #f4f7f6; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; text-align: center; margin: 0; }
+        header { background: linear-gradient(to right, var(--primary), var(--secondary)); color: white; padding: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .container { max-width: 1000px; margin: 20px auto; padding: 20px; }
+        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        button { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th { background: var(--primary); color: white; padding: 12px; }
+        td { padding: 12px; border-bottom: 1px solid #ddd; }
+        .status-present { color: #28a745; font-weight: bold; }
+        .status-absent { color: #dc3545; font-weight: bold; }
     </style>
 </head>
 <body>
-    <header>
-        <h1>🎓 Portail Professeur - Gestion des Présences</h1>
-    </header>
-
+    <header><h1>🎓 Tableau de Bord Professeur</h1></header>
     <div class="container">
-        <div class="config-box">
-            <h3>⚙️ Configuration de la séance</h3>
-            <div class="form-group">
-                <label>📚 Matière :</label>
-                <select id="choixMatiere">
-                    <option value="Mathématiques">Mathématiques</option>
-                    <option value="Informatique">Informatique</option>
-                    <option value="Physique">Physique</option>
-                    <option value="Français">Français</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>📅 Date :</label>
-                <input type="date" id="dateCours">
-            </div>
-            <button onclick="chargerListeAppel()">📋 Démarrer l'appel</button>
+        <div class="card">
+            <input type="text" id="matiere" placeholder="Nom de la matière" value="Mathématiques">
+            <input type="date" id="dateCours">
+            <button onclick="demarrerAppel()">🚀 Démarrer et Enregistrer</button>
         </div>
 
-        <div class="flex-container">
-            <div class="box" id="qrBox" style="display: none;">
-                <h2>📱 Scanner pour la présence</h2>
-                <p style="color: #666; font-size: 0.9em;">Le code de sécurité change toutes les 10 secondes</p>
-                <div id="qrcode"></div>
-                <p style="font-size: 1.1em;">Prochain code dans : <span id="timer">10</span>s</p>
-            </div>
+        <div id="qrSection" style="display:none;" class="card">
+            <div id="qrcode" style="display: flex; justify-content: center; margin-bottom: 10px;"></div>
+            <p>Code actif - Mise à jour auto</p>
+        </div>
 
-            <div class="box">
-                <h2>👥 Liste d'appel <span id="count" class="badge">0 / 0</span></h2>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Heure</th>
-                            <th>Étudiant</th>
-                            <th>Statut</th>
-                        </tr>
-                    </thead>
-                    <tbody id="listeBody">
-                        <tr><td colspan="3" style="text-align: center; color: #888; font-style: italic;">Veuillez démarrer l'appel pour charger la liste.</td></tr>
-                    </tbody>
-                </table>
-            </div>
+        <div class="card">
+            <h2>Liste en direct</h2>
+            <table>
+                <thead><tr><th>Heure</th><th>Étudiant</th><th>Statut</th></tr></thead>
+                <tbody id="tableBody"></tbody>
+            </table>
         </div>
     </div>
 
     <script>
-        const qrContainer = document.getElementById("qrcode");
-        let qrcode = new QRCode(qrContainer, { width: 220, height: 220, colorDark : "#2d3436", colorLight : "#ffffff" });
-        
-        let sessionDemarree = false;
-        let temps = 10;
-        let etudiantsTotal = 0;
-
-        // Date du jour par défaut
         document.getElementById('dateCours').valueAsDate = new Date();
+        let qrcode = new QRCode(document.getElementById("qrcode"), { width: 200, height: 200 });
 
-        function genererNouveauCode() {
-            const token = "token_" + Math.random().toString(36).substr(2, 9);
-            const url = "https://" + window.location.host + "/etudiant.html?token=" + token; 
-            qrcode.makeCode(url);
-        }
-
-        // Charger la liste depuis MongoDB
-        async function chargerListeAppel() {
+        async function demarrerAppel() {
+            const matiere = document.getElementById('matiere').value;
             const date = document.getElementById('dateCours').value;
-            if(!date) { alert("Veuillez choisir une date !"); return; }
 
-            try {
-                const reponse = await fetch('/liste-officielle');
-                const etudiants = await reponse.json();
-                
-                etudiantsTotal = etudiants.length;
-                document.getElementById('count').innerText = "0 / " + etudiantsTotal;
+            // 1. On crée la séance dans MongoDB
+            await fetch('/demarrer-seance', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ matiere, date })
+            });
 
-                const body = document.getElementById('listeBody');
-                body.innerHTML = ""; 
-
-                etudiants.forEach(etudiant => {
-                    // On remplace les espaces par des tirets pour l'ID
-                    const idNom = etudiant.nom.replace(/\s+/g, '-'); 
-                    body.innerHTML += `
-                        <tr id="ligne-${idNom}">
-                            <td id="heure-${idNom}">--:--</td>
-                            <td><b>${etudiant.nom}</b></td>
-                            <td id="statut-${idNom}" class="status-absent">🔴 Absent</td>
-                        </tr>
-                    `;
-                });
-
-                document.getElementById('qrBox').style.display = "block";
-                sessionDemarree = true;
-                genererNouveauCode();
-                
-            } catch (erreur) {
-                console.error(erreur);
-                alert("Erreur serveur ! Vérifiez que votre serveur est bien en ligne.");
-            }
+            // 2. On affiche le QR Code
+            document.getElementById('qrSection').style.display = 'block';
+            genererQR();
+            
+            // 3. On charge le tableau
+            chargerTableau();
+            setInterval(chargerTableau, 3000); // Rafraîchir toutes les 3s
+            setInterval(genererQR, 10000); // Nouveau QR toutes les 10s
         }
 
-        // Mettre à jour la liste en temps réel
-        function mettreAJourListe() {
-            if (!sessionDemarree) return; 
-
-            fetch('/liste')
-                .then(res => res.json())
-                .then(data => {
-                    let presentsCompte = 0;
-
-                    data.forEach(presence => {
-                        const idNom = presence.nom.replace(/\s+/g, '-');
-                        const caseStatut = document.getElementById(`statut-${idNom}`);
-                        const caseHeure = document.getElementById(`heure-${idNom}`);
-
-                        if (caseStatut && caseStatut.innerText.includes("Absent")) {
-                            caseStatut.innerHTML = "🟢 Présent";
-                            caseStatut.className = "status-present";
-                            caseHeure.innerText = presence.heure;
-                        }
-
-                        if (caseStatut && caseStatut.innerText.includes("Présent")) {
-                            presentsCompte++;
-                        }
-                    });
-
-                    document.getElementById('count').innerText = presentsCompte + " / " + etudiantsTotal;
-                });
+        function genererQR() {
+            const token = Math.random().toString(36).substr(2, 9);
+            qrcode.makeCode("https://" + window.location.host + "/etudiant.html?token=" + token);
         }
 
-        setInterval(() => {
-            if (sessionDemarree) {
-                temps--;
-                document.getElementById('timer').innerText = temps;
-                if (temps <= 0) {
-                    genererNouveauCode();
-                    temps = 10;
-                }
-                mettreAJourListe();
-            }
-        }, 1000);
+        async function chargerTableau() {
+            const res = await fetch('/liste-officielle');
+            const etudiants = await res.json();
+            const body = document.getElementById('tableBody');
+            body.innerHTML = "";
+            
+            etudiants.forEach(e => {
+                body.innerHTML += `<tr><td>--:--</td><td>${e.nom}</td><td class="status-absent">🔴 Absent</td></tr>`;
+            });
+        }
     </script>
 </body>
 </html>
