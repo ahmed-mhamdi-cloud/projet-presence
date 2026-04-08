@@ -37,7 +37,7 @@
 
     <div id="qrBox" class="card" style="display:none; margin-top:20px;">
         <h3 id="qrTxt" style="color:#4e54c8;"></h3>
-        <div id="qrcode" style="display:flex; justify-content:center; margin-bottom: 15px;"></div>
+        <div id="qrcode" style="display:flex; justify-content:center; margin-bottom: 15px; min-height: 200px;"></div>
         <p>Demandez aux étudiants de scanner ce code</p>
     </div>
 
@@ -46,6 +46,8 @@
         document.getElementById('matiere').onchange = function() {
             document.getElementById('nomAutre').style.display = (this.value === 'Autre') ? 'block' : 'none';
         };
+
+        let monQRCode = null; // Variable globale pour stocker le QR Code
 
         async function lancer() {
             const mat = document.getElementById('matiere').value === 'Autre' ? document.getElementById('nomAutre').value : document.getElementById('matiere').value;
@@ -65,13 +67,25 @@
             msg.style.display = 'block';
             setTimeout(() => msg.style.display = 'none', 4000);
 
-            // Générer le QR Code avec les bonnes infos
+            // Gérer l'affichage du QR Code
             document.getElementById('qrBox').style.display = 'block';
             document.getElementById('qrTxt').innerText = `${mat} - ${type}`;
-            document.getElementById('qrcode').innerHTML = ""; // Efface l'ancien QR
-            new QRCode(document.getElementById("qrcode"), { width: 200, height: 200 }).makeCode(
-                `https://${window.location.host}/etudiant.html?m=${mat}&d=${date}&t=${type}`
-            );
+            
+            const lienPourEtudiant = `https://${window.location.host}/etudiant.html?m=${encodeURIComponent(mat)}&d=${date}&t=${encodeURIComponent(type)}`;
+
+            // Génération sécurisée du QR Code
+            if (monQRCode === null) {
+                // S'il n'existe pas encore, on le crée
+                monQRCode = new QRCode(document.getElementById("qrcode"), { 
+                    width: 200, 
+                    height: 200,
+                    text: lienPourEtudiant
+                });
+            } else {
+                // S'il existe déjà, on l'efface proprement et on le refait
+                monQRCode.clear();
+                monQRCode.makeCode(lienPourEtudiant);
+            }
         }
     </script>
 </body>
