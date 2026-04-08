@@ -15,23 +15,28 @@ mongoose.connect(mongoURI)
   .catch(err => console.log("❌ Erreur :", err));
 
 // SCHÉMAS
-const SeanceSchema = new mongoose.Schema({
+const Seance = mongoose.model('Seance', new mongoose.Schema({
     matiere: String,
     date: String,
-    etudiants: Array // Chaque étudiant aura {nom, s1: "Absent", s2: "Absent"}
-});
-const Seance = mongoose.model('Seance', SeanceSchema);
+    etudiants: Array // Chaque étudiant: {nom, s1: "Absent", s2: "Absent"}
+}));
 const EtudiantOfficiel = mongoose.model('Etudiant', new mongoose.Schema({ nom: String }), 'etudiants_inscrits');
 
 // ROUTES
 app.post('/demarrer-seance', async (req, res) => {
     try {
-        const { matiere, date, typeSeance } = req.body; // typeSeance est "Séance 1" ou "Séance 2"
-        let seanceExistante = await Seance.findOne({ matiere, date });
+        const { matiere, date, typeSeance } = req.body;
+        let seanceExistante = await Seance.findOne({ matiere: matiere, date: date });
 
         if (!seanceExistante) {
-            // Première fois qu'on lance cette matière aujourd'hui
-            const listeInscrits = await EtudiantOfficiel.find();
+            // Chercher les étudiants dans la base
+            let listeInscrits = await EtudiantOfficiel.find();
+            
+            // SÉCURITÉ : Si la liste est vide dans MongoDB, on met des étudiants par défaut
+            if (listeInscrits.length === 0) {
+                listeInscrits = [{ nom: "Ahmed Mhamdi" }, { nom: "Mohamed Ali" }, { nom: "Fatima Zahra" }];
+            }
+
             const tableauInitial = listeInscrits.map(e => ({
                 nom: e.nom,
                 s1: "Absent",
@@ -40,7 +45,7 @@ app.post('/demarrer-seance', async (req, res) => {
             seanceExistante = new Seance({ matiere, date, etudiants: tableauInitial });
             await seanceExistante.save();
         }
-        res.json({ message: `${typeSeance} démarrée pour ${matiere}` });
+        res.json({ message: "Séance prête" });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -49,15 +54,21 @@ app.post('/demarrer-seance', async (req, res) => {
 app.post('/valider-presence', async (req, res) => {
     try {
         const { nom, date, matiere, typeSeance } = req.body;
+        
+        // On détermine si on modifie la colonne s1 ou s2
         const champStatut = typeSeance === "Séance 1" ? "etudiants.$.s1" : "etudiants.$.s2";
         
-        await Seance.updateOne(
-            { date, matiere, "etudiants.nom": nom },
+        const resultat = await Seance.updateOne(
+            { date: date, matiere: matiere, "etudiants.nom": nom },
             { $set: { [champStatut]: "Présent" } }
         );
-        res.json({ message: "Présence enregistrée" });
+
+        if (resultat.modifiedCount === 0) {
+            return res.status(400).json({ error: "Étudiant non trouvé dans la liste de cette séance." });
+        }
+        res.json({ message: "Présence enregistrée avec succès !" });
     } catch (err) {
-        res.status(500).json({ error: "Erreur scan" });
+        res.status(500).json({ error: "Erreur serveur lors du scan" });
     }
 });
 
@@ -67,4 +78,4 @@ app.get('/archives', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`🚀 Serveur actif`));
+app.listen(PORT, () => console.log(`🚀 Serveur actif sur port ${PORT}`));
