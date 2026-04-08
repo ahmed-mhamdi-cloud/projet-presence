@@ -8,8 +8,9 @@
         body { font-family: sans-serif; text-align: center; background: #f0f2f5; padding: 20px; }
         .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 500px; margin: auto; }
         #msgInfo { display: none; color: white; background: #28a745; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; }
-        select, input, button { width: 90%; padding: 12px; margin: 10px 0; border-radius: 6px; border: 1px solid #ddd; }
-        button { background: #4e54c8; color: white; border: none; cursor: pointer; }
+        select, input, button { width: 90%; padding: 12px; margin: 10px 0; border-radius: 6px; border: 1px solid #ddd; font-size: 16px; }
+        button { background: #4e54c8; color: white; border: none; font-weight: bold; cursor: pointer; }
+        .btn-archive { background: white; color: #4e54c8; border: 2px solid #4e54c8; text-decoration: none; display: inline-block; padding: 10px 20px; border-radius: 6px; margin-top: 15px; }
     </style>
 </head>
 <body>
@@ -30,13 +31,14 @@
         
         <input type="date" id="dateS">
         <button onclick="lancer()">Démarrer l'appel</button>
-        <br><br>
-        <a href="archives.html">📂 Voir les Archives</a>
+        <br>
+        <a href="archives.html" class="btn-archive">📂 Voir les Archives</a>
     </div>
 
     <div id="qrBox" class="card" style="display:none; margin-top:20px;">
-        <div id="qrcode" style="display:flex; justify-content:center;"></div>
-        <p id="qrTxt"></p>
+        <h3 id="qrTxt" style="color:#4e54c8;"></h3>
+        <div id="qrcode" style="display:flex; justify-content:center; margin-bottom: 15px;"></div>
+        <p>Demandez aux étudiants de scanner ce code</p>
     </div>
 
     <script>
@@ -50,22 +52,24 @@
             const type = document.getElementById('typeSeance').value;
             const date = document.getElementById('dateS').value;
 
+            // Envoi au serveur pour créer la liste des étudiants
             await fetch('/demarrer-seance', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ matiere: mat, date: date, typeSeance: type })
             });
 
-            // Message de confirmation
+            // Afficher le message vert
             const msg = document.getElementById('msgInfo');
             msg.innerText = `✅ ${type} démarrée pour ${mat} !`;
             msg.style.display = 'block';
             setTimeout(() => msg.style.display = 'none', 4000);
 
-            // QR Code
+            // Générer le QR Code avec les bonnes infos
             document.getElementById('qrBox').style.display = 'block';
-            document.getElementById('qrTxt').innerText = `Scan pour : ${mat} (${type})`;
-            new QRCode(document.getElementById("qrcode"), { width: 180, height: 180 }).makeCode(
+            document.getElementById('qrTxt').innerText = `${mat} - ${type}`;
+            document.getElementById('qrcode').innerHTML = ""; // Efface l'ancien QR
+            new QRCode(document.getElementById("qrcode"), { width: 200, height: 200 }).makeCode(
                 `https://${window.location.host}/etudiant.html?m=${mat}&d=${date}&t=${type}`
             );
         }

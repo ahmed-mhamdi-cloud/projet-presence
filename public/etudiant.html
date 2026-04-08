@@ -3,65 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Présence Étudiant</title>
+    <title>Validation de Présence</title>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; padding: 40px; background-color: #e9ecef; }
-        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        .success { color: #28a745; font-size: 22px; font-weight: bold; }
-        .error { color: #dc3545; font-size: 22px; font-weight: bold; }
-        input { padding: 10px; width: 80%; margin: 15px 0; font-size: 16px; border: 1px solid #ccc; border-radius: 5px;}
-        button { padding: 12px 25px; background-color: #007bff; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; }
+        body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #f0f2f5; padding: 20px; margin: 0; }
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 400px; margin: 40px auto; }
+        h2 { color: #4e54c8; margin-bottom: 5px; }
+        #infoSeance { color: #666; font-weight: bold; margin-bottom: 20px; }
+        input { width: 90%; padding: 12px; margin: 10px 0; border-radius: 6px; border: 1px solid #ccc; font-size: 16px; box-sizing: border-box; }
+        button { width: 90%; padding: 12px; background: #28a745; color: white; border: none; border-radius: 6px; font-weight: bold; font-size: 16px; cursor: pointer; margin-top: 10px; }
+        button:hover { background: #218838; }
+        #message { margin-top: 20px; font-weight: bold; font-size: 16px; padding: 10px; border-radius: 6px; display: none; }
     </style>
 </head>
 <body>
     <div class="card">
-        <h1>Validation</h1>
-        <p id="message">Analyse du code...</p>
+        <h2>✅ Marquer sa présence</h2>
+        <div id="infoSeance">Chargement des informations...</div>
         
-        <div id="formulaire" style="display: none;">
-            <input type="text" id="nomEtudiant" placeholder="Entrez votre Prénom et Nom">
-            <br>
-            <button onclick="envoyerPresence()">Je suis présent !</button>
-        </div>
+        <input type="text" id="nomEtudiant" placeholder="Entrez votre Prénom et Nom">
+        <button onclick="valider()">Confirmer ma présence</button>
+        
+        <div id="message"></div>
     </div>
 
     <script>
+        // 1. Récupérer les informations cachées dans le QR Code (dans l'URL)
         const urlParams = new URLSearchParams(window.location.search);
-        const token = urlParams.get('token');
+        const matiere = urlParams.get('m');
+        const date = urlParams.get('d');
+        const typeSeance = urlParams.get('t');
 
-        const messageDiv = document.getElementById('message');
-        const formulaireDiv = document.getElementById('formulaire');
-
-        if (token) {
-            messageDiv.innerHTML = `<span class="success">Code scanné ! ✅</span><br>Veuillez indiquer votre nom.`;
-            formulaireDiv.style.display = "block";
+        // 2. Afficher ces informations pour rassurer l'étudiant
+        const infoDiv = document.getElementById('infoSeance');
+        if (matiere && date && typeSeance) {
+            infoDiv.innerText = `Cours : ${matiere} | ${typeSeance} | ${date}`;
         } else {
-            messageDiv.innerHTML = `<span class="error">❌ Erreur : Aucun code détecté.</span>`;
+            infoDiv.innerText = "⚠️ Attention : Veuillez scanner un vrai QR Code.";
+            infoDiv.style.color = "red";
         }
 
-        function envoyerPresence() {
-            const nom = document.getElementById('nomEtudiant').value;
-            if (nom === "") {
-                alert("Veuillez entrer votre nom !");
+        // 3. Fonction pour envoyer la présence au serveur
+        async function valider() {
+            const nom = document.getElementById('nomEtudiant').value.trim();
+            const msgDiv = document.getElementById('message');
+
+            msgDiv.style.display = "block"; // Afficher la zone de message
+
+            // Sécurité : Vérifier si le nom est vide
+            if (!nom) {
+                msgDiv.style.background = "#ffebee";
+                msgDiv.style.color = "#dc3545";
+                msgDiv.innerText = "❌ Veuillez entrer votre nom.";
                 return;
             }
 
-            // On cache le formulaire et on affiche un message d'attente
-            formulaireDiv.style.display = "none";
-            messageDiv.innerHTML = `<span style="color: #007bff; font-weight: bold;">Envoi en cours... ⏳</span>`;
+            // Sécurité : Vérifier si les paramètres du QR code sont bien là
+            if (!matiere || !date || !typeSeance) {
+                msgDiv.style.background = "#ffebee";
+                msgDiv.style.color = "#dc3545";
+                msgDiv.innerText = "❌ Erreur : Veuillez scanner depuis le téléphone.";
+                return;
+            }
 
-            fetch('/valider-presence', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nom: nom, token: token })
-            })
-            .then(() => {
-                // On affiche le message de succès quoi qu'il arrive (pour ne pas bloquer l'écran de l'étudiant)
-                messageDiv.innerHTML = `<span class="success">🎉 Présence validée pour ${nom} !</span><br><br><p style="color: #555;">Vous pouvez maintenant fermer cette page.</p>`;
-            })
-            .catch(error => {
-                messageDiv.innerHTML = `<span class="success">🎉 Présence envoyée !</span><br><br><p style="color: #555;">Vous pouvez fermer cette page.</p>`;
-            });
+            try {
+                msgDiv.style.background = "#fff3cd";
+                msgDiv.style.color = "#856404";
+                msgDiv.innerText = "⏳ Enregistrement en cours...";
+
+                // Envoyer les données au serveur (votre server.js)
+                const res = await fetch('/valider-presence', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nom: nom, date: date, matiere: matiere, typeSeance: typeSeance })
+                });
+                
+                const data = await res.json();
+                
+                if (res.ok) {
+                    msgDiv.style.background = "#d4edda";
+                    msgDiv.style.color = "#155724";
+                    msgDiv.innerText = "✅ " + data.message;
+                    document.getElementById('nomEtudiant').value = ""; // Vider la case après succès
+                } else {
+                    msgDiv.style.background = "#ffebee";
+                    msgDiv.style.color = "#dc3545";
+                    msgDiv.innerText = "❌ " + data.error; // Ex: "Étudiant non trouvé"
+                }
+            } catch (error) {
+                msgDiv.style.background = "#ffebee";
+                msgDiv.style.color = "#dc3545";
+                msgDiv.innerText = "❌ Erreur de connexion au serveur.";
+            }
         }
     </script>
 </body>
