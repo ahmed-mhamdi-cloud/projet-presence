@@ -20,6 +20,8 @@ const Seance = mongoose.model('Seance', new mongoose.Schema({
     date: String,
     etudiants: Array // Chaque étudiant: {nom, s1: "Absent", s2: "Absent"}
 }));
+
+// Assurez-vous que le nom de la collection correspond à celle de votre MongoDB ('etudiants' ou 'etudiants_inscrits')
 const EtudiantOfficiel = mongoose.model('Etudiant', new mongoose.Schema({ nom: String }), 'etudiants_inscrits');
 
 // ROUTES
@@ -29,14 +31,9 @@ app.post('/demarrer-seance', async (req, res) => {
         let seanceExistante = await Seance.findOne({ matiere: matiere, date: date });
 
         if (!seanceExistante) {
-            // Chercher les étudiants dans la base
-            let listeInscrits = await EtudiantOfficiel.find();
+            // Chercher UNIQUEMENT VOS VRAIS ÉTUDIANTS dans la base
+            const listeInscrits = await EtudiantOfficiel.find();
             
-            // SÉCURITÉ : Si la liste est vide dans MongoDB, on met des étudiants par défaut
-            if (listeInscrits.length === 0) {
-                listeInscrits = [{ nom: "Ahmed Mhamdi" }, { nom: "Mohamed Ali" }, { nom: "Fatima Zahra" }];
-            }
-
             const tableauInitial = listeInscrits.map(e => ({
                 nom: e.nom,
                 s1: "Absent",
@@ -54,8 +51,6 @@ app.post('/demarrer-seance', async (req, res) => {
 app.post('/valider-presence', async (req, res) => {
     try {
         const { nom, date, matiere, typeSeance } = req.body;
-        
-        // On détermine si on modifie la colonne s1 ou s2
         const champStatut = typeSeance === "Séance 1" ? "etudiants.$.s1" : "etudiants.$.s2";
         
         const resultat = await Seance.updateOne(
