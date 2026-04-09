@@ -59,6 +59,32 @@
     text-transform: uppercase;
   }
 
+  .btn-archives-header {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.25rem;
+    border-radius: 10px;
+    border: 1px solid rgba(124,58,237,0.4);
+    background: rgba(124,58,237,0.08);
+    color: #a78bfa;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s;
+    margin-top: 1rem;
+    letter-spacing: 0.05em;
+  }
+
+  .btn-archives-header:hover {
+    background: rgba(124,58,237,0.18);
+    border-color: var(--accent2);
+    color: #c4b5fd;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(124,58,237,0.2);
+  }
+
   .card {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -86,11 +112,7 @@
     margin-bottom: 1rem;
   }
 
-  .form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
+  .form-group { display: flex; flex-direction: column; gap: 0.5rem; }
 
   label {
     font-size: 0.7rem;
@@ -133,6 +155,7 @@
     transition: all 0.2s;
     width: 100%;
     margin-top: 0.75rem;
+    text-decoration: none;
   }
 
   .btn-primary {
@@ -161,11 +184,28 @@
 
   .btn-logs:hover { border-color: var(--warn); color: var(--warn); }
 
-  /* QR Zone */
-  #qr-zone {
-    display: none;
-    text-align: center;
+  .btn-archives {
+    background: transparent;
+    border: 1px solid rgba(124,58,237,0.35);
+    color: #a78bfa;
+    font-size: 0.82rem;
+    margin-top: 0.75rem;
   }
+
+  .btn-archives:hover {
+    background: rgba(124,58,237,0.1);
+    border-color: var(--accent2);
+    color: #c4b5fd;
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 1rem 0 0.25rem;
+  }
+
+  /* QR Zone */
+  #qr-zone { display: none; text-align: center; }
 
   #qrcode {
     display: inline-block;
@@ -175,7 +215,6 @@
     margin: 1rem 0;
   }
 
-  /* Timer */
   #timer-bar {
     height: 6px;
     border-radius: 3px;
@@ -198,7 +237,6 @@
     margin-bottom: 0.5rem;
   }
 
-  /* Badges sécurité */
   .badge-sec {
     display: inline-flex;
     align-items: center;
@@ -210,11 +248,8 @@
     margin: 0.25rem;
   }
 
-  .badge-ok  { background: rgba(16,185,129,0.1);  color: var(--success); border: 1px solid rgba(16,185,129,0.3); }
-  .badge-warn { background: rgba(245,158,11,0.1); color: var(--warn);    border: 1px solid rgba(245,158,11,0.3); }
-  .badge-err  { background: rgba(239,68,68,0.1);  color: var(--danger);  border: 1px solid rgba(239,68,68,0.3); }
+  .badge-ok { background: rgba(16,185,129,0.1); color: var(--success); border: 1px solid rgba(16,185,129,0.3); }
 
-  /* Toast */
   #toast {
     position: fixed;
     bottom: 2rem;
@@ -231,14 +266,10 @@
   }
 
   #toast.show { opacity: 1; transform: translateY(0); }
-  #toast.ok   { background: rgba(16,185,129,0.9);  color: #fff; }
-  #toast.err  { background: rgba(239,68,68,0.9);   color: #fff; }
+  #toast.ok   { background: rgba(16,185,129,0.9); color: #fff; }
+  #toast.err  { background: rgba(239,68,68,0.9);  color: #fff; }
 
-  /* Logs */
-  #logs-panel {
-    display: none;
-    margin-top: 1rem;
-  }
+  #logs-panel { display: none; margin-top: 1rem; }
 
   .log-entry {
     display: flex;
@@ -257,7 +288,6 @@
 
   .log-time { color: var(--muted); white-space: nowrap; margin-left: 0.5rem; flex-shrink: 0; }
 
-  /* Responsive */
   @media (max-width: 480px) {
     .form-row { grid-template-columns: 1fr; }
   }
@@ -268,6 +298,10 @@
 <header>
   <h1>Interface Professeur</h1>
   <p>Système de Présence par QR Code — Sécurisé</p>
+  <br>
+  <a href="/archives.html" target="_blank" class="btn-archives-header">
+    📂 Accéder aux Archives
+  </a>
 </header>
 
 <!-- Formulaire -->
@@ -297,7 +331,12 @@
     ▶ Générer le QR Code
   </button>
 
-  <!-- Badges de sécurité actifs -->
+  <hr class="divider">
+
+  <a href="/archives.html" target="_blank" class="btn btn-archives">
+    📂 Voir les listes de présence (Archives)
+  </a>
+
   <div style="margin-top:1rem; text-align:center;">
     <span class="badge-ok">✔ Token 15 min</span>
     <span class="badge-ok">✔ IP unique / scan</span>
@@ -323,6 +362,12 @@
     🛡 Voir les logs de sécurité
   </button>
 
+  <hr class="divider">
+
+  <a href="/archives.html" target="_blank" class="btn btn-archives">
+    📂 Voir les listes de présence (Archives)
+  </a>
+
   <div id="logs-panel">
     <div style="font-family:var(--mono);font-size:0.7rem;color:var(--muted);margin:0.75rem 0 0.5rem;">
       TENTATIVES BLOQUÉES :
@@ -334,7 +379,6 @@
 <div id="toast"></div>
 
 <script>
-  // Remplir la date du jour par défaut
   document.getElementById('date').valueAsDate = new Date();
 
   let timerInterval = null;
@@ -395,34 +439,28 @@
   }
 
   function afficherQR(token, matiere, date, typeSeance, expiry) {
-    // Construire l'URL encodée dans le QR
     const baseURL = window.location.origin;
     const params  = new URLSearchParams({ token, matiere, date, typeSeance });
     const url     = `${baseURL}/etudiant.html?${params}`;
 
-    // (Re)générer le QR code
     const qrDiv = document.getElementById('qrcode');
     qrDiv.innerHTML = '';
     new QRCode(qrDiv, {
-      text:          url,
-      width:         220,
-      height:        220,
-      colorDark:     '#000000',
-      colorLight:    '#ffffff',
-      correctLevel:  QRCode.CorrectLevel.H
+      text:         url,
+      width:        220,
+      height:       220,
+      colorDark:    '#000000',
+      colorLight:   '#ffffff',
+      correctLevel: QRCode.CorrectLevel.H
     });
 
-    // Afficher la zone
     document.getElementById('qr-zone').style.display = 'block';
-
-    // Lancer le timer
     expiryDate = new Date(expiry);
     lancerTimer();
   }
 
   function lancerTimer() {
     if (timerInterval) clearInterval(timerInterval);
-
     const TOTAL = 15 * 60 * 1000;
 
     timerInterval = setInterval(() => {
@@ -433,7 +471,6 @@
 
       document.getElementById('timer-fill').style.width = `${pct}%`;
 
-      // Couleur selon urgence
       if (pct < 20) {
         document.getElementById('timer-fill').style.background = 'linear-gradient(90deg,#ef4444,#f59e0b)';
       } else if (pct < 50) {
@@ -453,15 +490,12 @@
 
   async function toggleLogs() {
     const panel = document.getElementById('logs-panel');
-    if (panel.style.display === 'block') {
-      panel.style.display = 'none'; return;
-    }
+    if (panel.style.display === 'block') { panel.style.display = 'none'; return; }
     if (!currentMatiere || !currentDate) return;
 
     try {
       const res  = await fetch(`/securite-logs?matiere=${encodeURIComponent(currentMatiere)}&date=${encodeURIComponent(currentDate)}`);
       const data = await res.json();
-
       const list = document.getElementById('logs-list');
       list.innerHTML = '';
 
@@ -471,14 +505,10 @@
         data.tentativesBloquees.slice(-15).reverse().forEach(t => {
           const d = document.createElement('div');
           d.className = 'log-entry';
-          d.innerHTML = `
-            <span>${t.ip} — ${t.raison}</span>
-            <span class="log-time">${new Date(t.date).toLocaleTimeString()}</span>
-          `;
+          d.innerHTML = `<span>${t.ip} — ${t.raison}</span><span class="log-time">${new Date(t.date).toLocaleTimeString()}</span>`;
           list.appendChild(d);
         });
       }
-
       panel.style.display = 'block';
     } catch (e) {
       toast('Impossible de charger les logs.', 'err');
