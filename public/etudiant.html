@@ -1,100 +1,349 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Validation de Présence</title>
-    <style>
-        body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #f0f2f5; padding: 20px; margin: 0; }
-        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 400px; margin: 40px auto; }
-        h2 { color: #4e54c8; margin-bottom: 5px; }
-        #infoSeance { color: #666; font-weight: bold; margin-bottom: 20px; }
-        input { width: 90%; padding: 12px; margin: 10px 0; border-radius: 6px; border: 1px solid #ccc; font-size: 16px; box-sizing: border-box; }
-        button { width: 90%; padding: 12px; background: #28a745; color: white; border: none; border-radius: 6px; font-weight: bold; font-size: 16px; cursor: pointer; margin-top: 10px; }
-        button:hover { background: #218838; }
-        #message { margin-top: 20px; font-weight: bold; font-size: 16px; padding: 10px; border-radius: 6px; display: none; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Marquer ma Présence</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap');
+
+  :root {
+    --bg:      #0a0e1a;
+    --surface: #111827;
+    --border:  #1e2d45;
+    --accent:  #00d4ff;
+    --success: #10b981;
+    --danger:  #ef4444;
+    --warn:    #f59e0b;
+    --text:    #e2e8f0;
+    --muted:   #64748b;
+    --mono:    'Space Mono', monospace;
+    --sans:    'Syne', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    background-image:
+      radial-gradient(ellipse at 50% 0%, rgba(0,212,255,0.08) 0%, transparent 60%);
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 2rem;
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+    animation: slideUp 0.4s ease;
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .icon {
+    font-size: 3rem;
+    margin-bottom: 0.75rem;
+  }
+
+  h1 {
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin-bottom: 0.25rem;
+    background: linear-gradient(135deg, var(--accent), #7c3aed);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .seance-badge {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    padding: 0.3rem 0.8rem;
+    border-radius: 99px;
+    background: rgba(0,212,255,0.1);
+    border: 1px solid rgba(0,212,255,0.25);
+    color: var(--accent);
+    margin: 0.5rem 0 1.5rem;
+    letter-spacing: 0.06em;
+  }
+
+  .info-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    text-align: left;
+  }
+
+  .info-box {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.75rem;
+  }
+
+  .info-box .info-label {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.25rem;
+  }
+
+  .info-box .info-val {
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    color: var(--text);
+    word-break: break-all;
+  }
+
+  label {
+    display: block;
+    text-align: left;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+
+  input[type="text"] {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 1rem;
+    padding: 0.8rem 1rem;
+    outline: none;
+    transition: border-color 0.2s;
+    margin-bottom: 1rem;
+  }
+
+  input[type="text"]:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(0,212,255,0.08);
+  }
+
+  .btn {
+    width: 100%;
+    padding: 0.9rem;
+    border-radius: 12px;
+    font-family: var(--sans);
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    border: none;
+    background: linear-gradient(135deg, var(--accent), #0090b3);
+    color: #000;
+    transition: all 0.2s;
+  }
+
+  .btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,212,255,0.3);
+  }
+
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Résultat */
+  #result {
+    display: none;
+    margin-top: 1.25rem;
+    padding: 1rem;
+    border-radius: 12px;
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    line-height: 1.5;
+    text-align: left;
+  }
+
+  #result.ok  { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.25); color: var(--success); }
+  #result.err { background: rgba(239,68,68,0.1);  border: 1px solid rgba(239,68,68,0.25);  color: var(--danger);  }
+
+  /* Erreur critique (token invalide, réseau différent...) */
+  #critical-error {
+    display: none;
+    text-align: center;
+  }
+
+  #critical-error .big-icon { font-size: 3.5rem; margin-bottom: 0.75rem; }
+  #critical-error h2 { font-size: 1.1rem; font-weight: 700; color: var(--danger); margin-bottom: 0.5rem; }
+  #critical-error p  { font-size: 0.85rem; color: var(--muted); font-family: var(--mono); line-height: 1.6; }
+
+  /* Succès écran complet */
+  #success-screen {
+    display: none;
+    text-align: center;
+  }
+
+  #success-screen .big-icon { font-size: 4rem; }
+  #success-screen h2 { font-size: 1.3rem; font-weight: 800; color: var(--success); margin: 0.5rem 0; }
+  #success-screen p  { font-family: var(--mono); font-size: 0.8rem; color: var(--muted); }
+
+  /* Timer */
+  #exp-bar { height: 4px; border-radius: 2px; background: var(--border); margin: 1rem 0 0.5rem; overflow: hidden; }
+  #exp-fill { height: 100%; border-radius: 2px; background: linear-gradient(90deg,var(--success),var(--accent)); transition: width 1s linear; }
+  #exp-text { font-family: var(--mono); font-size: 0.7rem; color: var(--muted); text-align: right; }
+</style>
 </head>
 <body>
-    <div class="card">
-        <h2>✅ Marquer sa présence</h2>
-        <div id="infoSeance">Chargement des informations...</div>
-        
-        <input type="text" id="nomEtudiant" placeholder="Entrez votre Prénom et Nom">
-        <button onclick="valider()">Confirmer ma présence</button>
-        
-        <div id="message"></div>
+
+<div class="card">
+
+  <!-- État: paramètres manquants -->
+  <div id="critical-error">
+    <div class="big-icon">🚫</div>
+    <h2>Lien invalide</h2>
+    <p id="critical-msg">Ce lien est invalide ou incomplet.<br>Scannez à nouveau le QR Code affiché par le professeur.</p>
+  </div>
+
+  <!-- État: formulaire normal -->
+  <div id="form-zone">
+    <div class="icon">📋</div>
+    <h1>Marquer ma présence</h1>
+    <div class="seance-badge" id="seance-label">Séance —</div>
+
+    <div class="info-row">
+      <div class="info-box">
+        <div class="info-label">Matière</div>
+        <div class="info-val" id="info-matiere">—</div>
+      </div>
+      <div class="info-box">
+        <div class="info-label">Date</div>
+        <div class="info-val" id="info-date">—</div>
+      </div>
     </div>
 
-    <script>
-        // 1. Récupérer les informations cachées dans le QR Code (dans l'URL)
-        const urlParams = new URLSearchParams(window.location.search);
-        const matiere = urlParams.get('m');
-        const date = urlParams.get('d');
-        const typeSeance = urlParams.get('t');
+    <div id="exp-bar"><div id="exp-fill" style="width:100%"></div></div>
+    <p id="exp-text">QR Code valide <span id="exp-countdown">—</span></p>
 
-        // 2. Afficher ces informations pour rassurer l'étudiant
-        const infoDiv = document.getElementById('infoSeance');
-        if (matiere && date && typeSeance) {
-            infoDiv.innerText = `Cours : ${matiere} | ${typeSeance} | ${date}`;
-        } else {
-            infoDiv.innerText = "⚠️ Attention : Veuillez scanner un vrai QR Code.";
-            infoDiv.style.color = "red";
-        }
+    <br>
+    <label for="nom">Votre nom complet</label>
+    <input type="text" id="nom" placeholder="ex: Ahmed Mhamdi" autocomplete="name" />
 
-        // 3. Fonction pour envoyer la présence au serveur
-        async function valider() {
-            const nom = document.getElementById('nomEtudiant').value.trim();
-            const msgDiv = document.getElementById('message');
+    <button class="btn" id="btn-valider" onclick="validerPresence()">
+      ✅ Valider ma présence
+    </button>
 
-            msgDiv.style.display = "block"; // Afficher la zone de message
+    <div id="result"></div>
+  </div>
 
-            // Sécurité : Vérifier si le nom est vide
-            if (!nom) {
-                msgDiv.style.background = "#ffebee";
-                msgDiv.style.color = "#dc3545";
-                msgDiv.innerText = "❌ Veuillez entrer votre nom.";
-                return;
-            }
+  <!-- État: succès -->
+  <div id="success-screen">
+    <div class="big-icon">✅</div>
+    <h2>Présence enregistrée !</h2>
+    <p id="success-msg">Votre présence a été marquée avec succès.</p>
+  </div>
 
-            // Sécurité : Vérifier si les paramètres du QR code sont bien là
-            if (!matiere || !date || !typeSeance) {
-                msgDiv.style.background = "#ffebee";
-                msgDiv.style.color = "#dc3545";
-                msgDiv.innerText = "❌ Erreur : Veuillez scanner depuis le téléphone.";
-                return;
-            }
+</div>
 
-            try {
-                msgDiv.style.background = "#fff3cd";
-                msgDiv.style.color = "#856404";
-                msgDiv.innerText = "⏳ Enregistrement en cours...";
+<script>
+  // ── Lire les paramètres du QR Code dans l'URL
+  const params     = new URLSearchParams(window.location.search);
+  const token      = params.get('token');
+  const matiere    = params.get('matiere');
+  const date       = params.get('date');
+  const typeSeance = params.get('typeSeance');
 
-                // Envoyer les données au serveur (votre server.js)
-                const res = await fetch('/valider-presence', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ nom: nom, date: date, matiere: matiere, typeSeance: typeSeance })
-                });
-                
-                const data = await res.json();
-                
-                if (res.ok) {
-                    msgDiv.style.background = "#d4edda";
-                    msgDiv.style.color = "#155724";
-                    msgDiv.innerText = "✅ " + data.message;
-                    document.getElementById('nomEtudiant').value = ""; // Vider la case après succès
-                } else {
-                    msgDiv.style.background = "#ffebee";
-                    msgDiv.style.color = "#dc3545";
-                    msgDiv.innerText = "❌ " + data.error; // Ex: "Étudiant non trouvé"
-                }
-            } catch (error) {
-                msgDiv.style.background = "#ffebee";
-                msgDiv.style.color = "#dc3545";
-                msgDiv.innerText = "❌ Erreur de connexion au serveur.";
-            }
-        }
-    </script>
+  // ── Vérifier que tous les paramètres sont présents
+  if (!token || !matiere || !date || !typeSeance) {
+    document.getElementById('form-zone').style.display     = 'none';
+    document.getElementById('critical-error').style.display = 'block';
+  } else {
+    // Afficher les infos de la séance
+    document.getElementById('info-matiere').textContent = matiere;
+    document.getElementById('info-date').textContent    = new Date(date + 'T00:00:00').toLocaleDateString('fr-FR', { day:'numeric', month:'long', year:'numeric' });
+    document.getElementById('seance-label').textContent = typeSeance;
+
+    // Timer côté client (estimé à 15 min depuis le chargement de la page)
+    // Note: le vrai contrôle est côté serveur. Ceci est juste indicatif.
+    let secondesRestantes = 15 * 60;
+
+    const timerInterval = setInterval(() => {
+      secondesRestantes--;
+      const pct = (secondesRestantes / (15 * 60)) * 100;
+      const m   = Math.floor(secondesRestantes / 60);
+      const s   = secondesRestantes % 60;
+
+      document.getElementById('exp-fill').style.width = `${Math.max(0, pct)}%`;
+      document.getElementById('exp-countdown').textContent =
+        `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+
+      if (pct < 20) {
+        document.getElementById('exp-fill').style.background = 'linear-gradient(90deg,#ef4444,#f59e0b)';
+      }
+
+      if (secondesRestantes <= 0) {
+        clearInterval(timerInterval);
+        document.getElementById('exp-countdown').textContent = 'EXPIRÉ';
+        document.getElementById('btn-valider').disabled = true;
+        showResult('Ce QR Code a expiré. Demandez au professeur de renouveler le code.', 'err');
+      }
+    }, 1000);
+  }
+
+  async function validerPresence() {
+    const nom = document.getElementById('nom').value.trim();
+
+    if (!nom) {
+      showResult('Veuillez entrer votre nom complet.', 'err');
+      return;
+    }
+
+    const btn = document.getElementById('btn-valider');
+    btn.disabled    = true;
+    btn.textContent = '⏳ Vérification en cours…';
+
+    try {
+      const res  = await fetch('/valider-presence', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nom, date, matiere, typeSeance, token })
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        // Succès — afficher l'écran de confirmation
+        document.getElementById('form-zone').style.display    = 'none';
+        document.getElementById('success-screen').style.display = 'block';
+        document.getElementById('success-msg').textContent    =
+          `${nom} — ${typeSeance} — ${matiere}`;
+      } else {
+        // Erreur — remettre le bouton et afficher le message
+        btn.disabled    = false;
+        btn.textContent = '✅ Valider ma présence';
+        showResult(data.error || 'Une erreur est survenue.', 'err');
+      }
+    } catch (e) {
+      btn.disabled    = false;
+      btn.textContent = '✅ Valider ma présence';
+      showResult('Erreur réseau. Vérifiez votre connexion WiFi.', 'err');
+    }
+  }
+
+  function showResult(msg, type) {
+    const r = document.getElementById('result');
+    r.textContent      = msg;
+    r.className        = type;
+    r.style.display    = 'block';
+  }
+</script>
 </body>
 </html>

@@ -1,102 +1,318 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Archives des Présences</title>
-    <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f6f9; padding: 20px; margin: 0; color: #333; }
-        .container { max-width: 800px; margin: auto; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .btn-back { background: #4e54c8; color: white; text-decoration: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; }
-        
-        .card { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 25px; }
-        .card-title { color: #4e54c8; border-bottom: 1px solid #eee; padding-bottom: 15px; margin-top: 0; font-size: 18px; display: flex; align-items: center; }
-        .card-title::before { content: "📘"; margin-right: 8px; }
-        
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { padding: 15px 10px; text-align: left; border-bottom: 1px solid #eee; }
-        th { color: #555; font-weight: 600; font-size: 14px; }
-        td { font-weight: bold; font-size: 14px; }
-        
-        .badge { padding: 6px 12px; border-radius: 4px; font-weight: bold; font-size: 13px; display: inline-block; }
-        .badge-present { background-color: #d1e7dd; color: #0f5132; }
-        .badge-absent { background-color: #f8d7da; color: #842029; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Archives — Présence QR</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap');
+
+  :root {
+    --bg:      #0a0e1a;
+    --surface: #111827;
+    --border:  #1e2d45;
+    --accent:  #00d4ff;
+    --accent2: #7c3aed;
+    --success: #10b981;
+    --danger:  #ef4444;
+    --text:    #e2e8f0;
+    --muted:   #64748b;
+    --mono:    'Space Mono', monospace;
+    --sans:    'Syne', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    padding: 2rem 1rem 4rem;
+    background-image:
+      radial-gradient(ellipse at 80% 0%, rgba(124,58,237,0.07) 0%, transparent 60%);
+  }
+
+  header {
+    max-width: 900px;
+    margin: 0 auto 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  header h1 {
+    font-size: 1.6rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  header p {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .btn-refresh {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-refresh:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Séance card */
+  .seance-card {
+    max-width: 900px;
+    margin: 0 auto 2rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    animation: fadeIn 0.4s ease;
+  }
+
+  @keyframes fadeIn { from { opacity:0; transform:translateY(12px); } to { opacity:1; } }
+
+  .seance-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.5rem;
+    background: linear-gradient(90deg, rgba(0,212,255,0.06), rgba(124,58,237,0.06));
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .seance-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .seance-date {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+
+  /* Statistiques */
+  .stats-row {
+    display: flex;
+    gap: 1rem;
+    padding: 0.75rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+
+  .stat {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+
+  .stat strong {
+    font-size: 0.85rem;
+    margin-right: 0.3rem;
+  }
+
+  .stat.s-present strong { color: var(--success); }
+  .stat.s-absent  strong { color: var(--danger);  }
+
+  /* Table */
+  .table-wrap { overflow-x: auto; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  thead th {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 0.75rem 1.5rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+
+  tbody tr {
+    border-bottom: 1px solid rgba(30,45,69,0.5);
+    transition: background 0.15s;
+  }
+
+  tbody tr:hover { background: rgba(0,212,255,0.03); }
+  tbody tr:last-child { border-bottom: none; }
+
+  tbody td {
+    padding: 0.8rem 1.5rem;
+    font-family: var(--mono);
+    font-size: 0.82rem;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.3rem 0.8rem;
+    border-radius: 99px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+  }
+
+  .badge-present {
+    background: rgba(16,185,129,0.1);
+    color: var(--success);
+    border: 1px solid rgba(16,185,129,0.25);
+  }
+
+  .badge-absent {
+    background: rgba(239,68,68,0.08);
+    color: var(--danger);
+    border: 1px solid rgba(239,68,68,0.2);
+  }
+
+  /* Vide */
+  #empty {
+    display: none;
+    max-width: 900px;
+    margin: 4rem auto;
+    text-align: center;
+  }
+
+  #empty .icon { font-size: 3rem; margin-bottom: 1rem; }
+  #empty p { font-family: var(--mono); color: var(--muted); font-size: 0.85rem; }
+
+  /* Loading */
+  #loading {
+    max-width: 900px;
+    margin: 4rem auto;
+    text-align: center;
+    font-family: var(--mono);
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+</style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h2>📂 Archives des Séances</h2>
-            <a href="professeur.html" class="btn-back">⬅ Retour au Portail</a>
-        </div>
 
-        <div id="listeArchives">
-            <p>Chargement des données...</p>
-        </div>
-    </div>
+<header>
+  <div>
+    <h1>📂 Archives de Présence</h1>
+    <p>Toutes les séances enregistrées</p>
+  </div>
+  <button class="btn-refresh" onclick="chargerArchives()">⟳ Actualiser</button>
+</header>
 
-    <script>
-        async function chargerArchives() {
-            try {
-                const res = await fetch('/archives');
-                const seances = await res.json();
-                const conteneur = document.getElementById('listeArchives');
-                
-                conteneur.innerHTML = '';
+<div id="loading">⏳ Chargement des données…</div>
+<div id="empty">
+  <div class="icon">📭</div>
+  <p>Aucune séance enregistrée pour le moment.</p>
+</div>
+<div id="liste-archives"></div>
 
-                if (seances.length === 0) {
-                    conteneur.innerHTML = "<p>Aucune séance enregistrée.</p>";
-                    return;
-                }
+<script>
+  async function chargerArchives() {
+    const conteneur = document.getElementById('liste-archives');
+    const loading   = document.getElementById('loading');
+    const empty     = document.getElementById('empty');
 
-                seances.forEach(seance => {
-                    let html = `
-                    <div class="card">
-                        <h3 class="card-title">${seance.matiere} - Date: ${seance.date}</h3>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th style="width: 50%;">Nom de l'étudiant</th>
-                                    <th>Séance 1</th>
-                                    <th>Séance 2</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                    `;
+    conteneur.innerHTML = '';
+    loading.style.display = 'block';
+    empty.style.display   = 'none';
 
-                    if(seance.etudiants && seance.etudiants.length > 0) {
-                        seance.etudiants.forEach(etudiant => {
-                            const classeS1 = etudiant.s1 === "Présent" ? "badge-present" : "badge-absent";
-                            const classeS2 = etudiant.s2 === "Présent" ? "badge-present" : "badge-absent";
-                            
-                            html += `
-                                <tr>
-                                    <td>${etudiant.nom}</td>
-                                    <td><span class="badge ${classeS1}">${etudiant.s1}</span></td>
-                                    <td><span class="badge ${classeS2}">${etudiant.s2}</span></td>
-                                </tr>
-                            `;
-                        });
-                    } else {
-                        html += `<tr><td colspan="3" style="color:red; font-weight:normal;">Liste vide</td></tr>`;
-                    }
+    try {
+      const res    = await fetch('/archives');
+      const seances = await res.json();
 
-                    html += `
-                            </tbody>
-                        </table>
-                    </div>
-                    `;
-                    
-                    conteneur.innerHTML += html;
-                });
+      loading.style.display = 'none';
 
-            } catch (error) {
-                document.getElementById('listeArchives').innerHTML = "<p style='color:red;'>Erreur lors du chargement.</p>";
-            }
-        }
+      if (!seances || seances.length === 0) {
+        empty.style.display = 'block'; return;
+      }
 
-        chargerArchives();
-    </script>
+      seances.forEach(seance => {
+        const etudiants = seance.etudiants || [];
+        const presS1 = etudiants.filter(e => e.s1 === "Present").length;
+        const presS2 = etudiants.filter(e => e.s2 === "Present").length;
+        const total  = etudiants.length;
+
+        // Formater la date
+        let dateAff = seance.date;
+        try { dateAff = new Date(seance.date + 'T00:00:00').toLocaleDateString('fr-FR', { day:'numeric', month:'long', year:'numeric' }); } catch {}
+
+        // Générer les lignes d'étudiants
+        const lignes = etudiants.map(e => {
+          const cs1 = e.s1 === "Present" ? "badge-present" : "badge-absent";
+          const cs2 = e.s2 === "Present" ? "badge-present" : "badge-absent";
+          const ic1 = e.s1 === "Present" ? "✓" : "✗";
+          const ic2 = e.s2 === "Present" ? "✓" : "✗";
+          return `
+            <tr>
+              <td>${e.nom}</td>
+              <td><span class="badge ${cs1}">${ic1} ${e.s1}</span></td>
+              <td><span class="badge ${cs2}">${ic2} ${e.s2}</span></td>
+            </tr>
+          `;
+        }).join('');
+
+        const card = document.createElement('div');
+        card.className = 'seance-card';
+        card.innerHTML = `
+          <div class="seance-header">
+            <span class="seance-title">${seance.matiere}</span>
+            <span class="seance-date">📅 ${dateAff}</span>
+          </div>
+          <div class="stats-row">
+            <span class="stat"><strong>${total}</strong> étudiant(s)</span>
+            <span class="stat s-present"><strong>${presS1}</strong> présent(s) — Séance 1</span>
+            <span class="stat s-absent"><strong>${total - presS1}</strong> absent(s) — Séance 1</span>
+            <span class="stat s-present"><strong>${presS2}</strong> présent(s) — Séance 2</span>
+            <span class="stat s-absent"><strong>${total - presS2}</strong> absent(s) — Séance 2</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nom de l'étudiant</th>
+                  <th>Séance 1</th>
+                  <th>Séance 2</th>
+                </tr>
+              </thead>
+              <tbody>${lignes}</tbody>
+            </table>
+          </div>
+        `;
+
+        conteneur.appendChild(card);
+      });
+
+    } catch (e) {
+      loading.style.display = 'none';
+      conteneur.innerHTML   = `<div style="text-align:center;font-family:var(--mono);color:var(--danger);padding:3rem;">❌ Erreur de connexion au serveur.</div>`;
+    }
+  }
+
+  chargerArchives();
+</script>
 </body>
 </html>
