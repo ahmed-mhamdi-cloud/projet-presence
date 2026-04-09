@@ -18,11 +18,11 @@ mongoose.connect(mongoURI)
 const Seance = mongoose.model('Seance', new mongoose.Schema({
     matiere: String,
     date: String,
-    etudiants: Array // {nom, s1, s2}
+    etudiants: Array // Contiendra {nom, s1, s2}
 }));
 
-// Votre base de données officielle d'étudiants
-const EtudiantOfficiel = mongoose.model('Etudiant', new mongoose.Schema({ nom: String }), 'etudiants_inscrits');
+// ⚠️ ATTENTION ICI : On cherche dans la collection 'etudiants' de votre MongoDB
+const EtudiantOfficiel = mongoose.model('Etudiant', new mongoose.Schema({ nom: String }), 'etudiants');
 
 // ROUTE 1 : DEMARRER SEANCE
 app.post('/demarrer-seance', async (req, res) => {
@@ -31,10 +31,10 @@ app.post('/demarrer-seance', async (req, res) => {
         let seanceExistante = await Seance.findOne({ matiere: matiere, date: date });
 
         if (!seanceExistante) {
-            // On récupère STRICTEMENT la liste de la base de données
+            // On récupère la liste complète depuis MongoDB
             const listeInscrits = await EtudiantOfficiel.find();
             
-            // On prépare le tableau avec tout le monde en "Absent"
+            // On crée le tableau de la séance avec TOUT LE MONDE en "Absent" par défaut
             const tableauInitial = listeInscrits.map(e => ({
                 nom: e.nom,
                 s1: "Absent",
@@ -50,25 +50,21 @@ app.post('/demarrer-seance', async (req, res) => {
     }
 });
 
-// ROUTE 2 : VALIDER PRESENCE (STRICTE)
+// ROUTE 2 : VALIDER PRESENCE
 app.post('/valider-presence', async (req, res) => {
     try {
         const { nom, date, matiere, typeSeance } = req.body;
         
-        // 1. Trouver la séance
         let seanceExistante = await Seance.findOne({ date: date, matiere: matiere });
         if (!seanceExistante) {
-            return res.status(400).json({ error: "Séance introuvable. Le professeur doit la démarrer." });
+            return res.status(400).json({ error: "Séance introuvable." });
         }
 
         const nomSaisi = nom.trim().toLowerCase();
         let etudiantTrouve = false;
 
-        // 2. Chercher l'étudiant dans la liste officielle de cette séance
         for (let i = 0; i < seanceExistante.etudiants.length; i++) {
-            // On compare sans tenir compte des majuscules/minuscules pour éviter les erreurs de frappe
             if (seanceExistante.etudiants[i].nom.toLowerCase() === nomSaisi) {
-                // Étudiant reconnu ! On change son statut.
                 if (typeSeance === "Séance 1") seanceExistante.etudiants[i].s1 = "Présent";
                 if (typeSeance === "Séance 2") seanceExistante.etudiants[i].s2 = "Présent";
                 etudiantTrouve = true;
@@ -76,18 +72,16 @@ app.post('/valider-presence', async (req, res) => {
             }
         }
 
-        // 3. BLOCAGE STRICT : Si le nom n'est pas dans la liste officielle
         if (!etudiantTrouve) {
             return res.status(400).json({ error: "❌ Étudiant introuvable dans la base de données officielle." });
         }
 
-        // 4. Sauvegarder si l'étudiant a été trouvé
         seanceExistante.markModified('etudiants');
         await seanceExistante.save();
 
         res.json({ message: "Présence enregistrée avec succès !" });
     } catch (err) {
-        res.status(500).json({ error: "Erreur serveur lors du scan" });
+        res.status(500).json({ error: "Erreur serveur" });
     }
 });
 
