@@ -2,74 +2,98 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Archives - Historique</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Archives des Présences</title>
     <style>
-        body { font-family: sans-serif; background: #f4f7f6; padding: 20px; margin: 0; }
-        .container { max-width: 900px; margin: auto; }
-        .btn-retour { background: white; color: #4e54c8; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .seance-card { background: white; padding: 25px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border-left: 8px solid #4e54c8; }
-        .header-card { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
-        .header-card h2 { margin: 0; color: #333; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { border-bottom: 1px solid #eee; padding: 12px; text-align: left; }
-        th { background: #f8f9fa; color: #555; }
-        .present { color: #28a745; font-weight: bold; background: #e8f5e9; padding: 5px 10px; border-radius: 15px; }
-        .absent { color: #dc3545; font-weight: bold; background: #ffebee; padding: 5px 10px; border-radius: 15px; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; padding: 20px; margin: 0; }
+        .container { max-width: 800px; margin: auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .btn-back { background: #4e54c8; color: white; text-decoration: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; }
+        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .card-title { color: #4e54c8; border-bottom: 2px solid #f0f2f5; padding-bottom: 10px; margin-top: 0; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #f8f9fa; color: #333; }
+        .present { color: #155724; background-color: #d4edda; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 14px; }
+        .absent { color: #721c24; background-color: #f8d7da; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 14px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <a href="professeur.html" class="btn-retour">⬅ Retour au menu</a>
-        <h1>📂 Archives Complètes</h1>
-        <div id="list">Chargement des données...</div>
+        <div class="header">
+            <h2>📂 Archives des Séances</h2>
+            <a href="professeur.html" class="btn-back">⬅ Retour au Portail</a>
+        </div>
+
+        <div id="listeArchives">
+            <p>Chargement des données...</p>
+        </div>
     </div>
 
     <script>
-        async function load() {
+        async function chargerArchives() {
             try {
                 const res = await fetch('/archives');
-                const data = await res.json();
-                const container = document.getElementById('list');
+                const seances = await res.json();
+                const conteneur = document.getElementById('listeArchives');
                 
-                if(data.length === 0) {
-                    container.innerHTML = "<p>Aucune séance enregistrée. Démarrez un appel !</p>";
+                conteneur.innerHTML = ''; // On vide le texte de chargement
+
+                if (seances.length === 0) {
+                    conteneur.innerHTML = "<p>Aucune séance enregistrée pour le moment.</p>";
                     return;
                 }
 
-                container.innerHTML = "";
-
-                data.forEach(s => {
-                    const card = document.createElement('div');
-                    card.className = 'seance-card';
-                    
-                    // Création des lignes pour chaque étudiant de la liste
-                    let rows = s.etudiants.map(e => `
-                        <tr>
-                            <td><strong>${e.nom}</strong></td>
-                            <td><span class="${e.s1 === 'Présent' ? 'present' : 'absent'}">${e.s1 === 'Présent' ? '✅ Présent' : '❌ Absent'}</span></td>
-                            <td><span class="${e.s2 === 'Présent' ? 'present' : 'absent'}">${e.s2 === 'Présent' ? '✅ Présent' : '❌ Absent'}</span></td>
-                        </tr>
-                    `).join('');
-
-                    card.innerHTML = `
-                        <div class="header-card">
-                            <h2>📖 ${s.matiere}</h2>
-                            <span style="font-weight:bold; color:#666;">🗓 ${s.date}</span>
-                        </div>
+                // Pour chaque séance trouvée dans la base
+                seances.forEach(seance => {
+                    let html = `
+                    <div class="card">
+                        <h3 class="card-title">📘 ${seance.matiere} - Date: ${seance.date}</h3>
                         <table>
                             <thead>
-                                <tr><th>Nom de l'étudiant</th><th>Séance 1</th><th>Séance 2</th></tr>
+                                <tr>
+                                    <th>Nom de l'étudiant</th>
+                                    <th>Séance 1</th>
+                                    <th>Séance 2</th>
+                                </tr>
                             </thead>
-                            <tbody>${rows}</tbody>
-                        </table>
+                            <tbody>
                     `;
-                    container.appendChild(card);
+
+                    // On liste TOUS les étudiants (présents et absents)
+                    if(seance.etudiants && seance.etudiants.length > 0) {
+                        seance.etudiants.forEach(etudiant => {
+                            const classeS1 = etudiant.s1 === "Présent" ? "present" : "absent";
+                            const classeS2 = etudiant.s2 === "Présent" ? "present" : "absent";
+                            
+                            html += `
+                                <tr>
+                                    <td><strong>${etudiant.nom}</strong></td>
+                                    <td><span class="${classeS1}">${etudiant.s1}</span></td>
+                                    <td><span class="${classeS2}">${etudiant.s2}</span></td>
+                                </tr>
+                            `;
+                        });
+                    } else {
+                        html += `<tr><td colspan="3" style="text-align:center; color:red;">⚠️ Aucun étudiant trouvé dans la base lors du démarrage de cette séance.</td></tr>`;
+                    }
+
+                    html += `
+                            </tbody>
+                        </table>
+                    </div>
+                    `;
+                    
+                    conteneur.innerHTML += html;
                 });
-            } catch (e) {
-                document.getElementById('list').innerHTML = "<p style='color:red;'>Erreur de chargement des archives.</p>";
+
+            } catch (error) {
+                document.getElementById('listeArchives').innerHTML = "<p style='color:red;'>Erreur lors du chargement des archives.</p>";
             }
         }
-        load();
+
+        // Lancer la fonction au chargement de la page
+        chargerArchives();
     </script>
 </body>
 </html>
