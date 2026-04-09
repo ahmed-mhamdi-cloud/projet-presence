@@ -18,23 +18,23 @@ mongoose.connect(mongoURI)
 const Seance = mongoose.model('Seance', new mongoose.Schema({
     matiere: String,
     date: String,
-    etudiants: Array // Contiendra {nom, s1, s2}
+    etudiants: Array // Stocke {nom, s1, s2}
 }));
 
-// ⚠️ ATTENTION ICI : On cherche dans la collection 'etudiants' de votre MongoDB
+// On cible la collection 'etudiants' où vous avez mis vos 4 noms
 const EtudiantOfficiel = mongoose.model('Etudiant', new mongoose.Schema({ nom: String }), 'etudiants');
 
-// ROUTE 1 : DEMARRER SEANCE
+// ROUTE 1 : DEMARRER SEANCE (Importe la liste complète)
 app.post('/demarrer-seance', async (req, res) => {
     try {
-        const { matiere, date, typeSeance } = req.body;
+        const { matiere, date } = req.body;
         let seanceExistante = await Seance.findOne({ matiere: matiere, date: date });
 
         if (!seanceExistante) {
-            // On récupère la liste complète depuis MongoDB
+            // Récupération des 4 étudiants depuis MongoDB
             const listeInscrits = await EtudiantOfficiel.find();
             
-            // On crée le tableau de la séance avec TOUT LE MONDE en "Absent" par défaut
+            // Initialisation de TOUT LE MONDE en "Absent"
             const tableauInitial = listeInscrits.map(e => ({
                 nom: e.nom,
                 s1: "Absent",
@@ -44,7 +44,7 @@ app.post('/demarrer-seance', async (req, res) => {
             seanceExistante = new Seance({ matiere, date, etudiants: tableauInitial });
             await seanceExistante.save();
         }
-        res.json({ message: "Séance prête" });
+        res.json({ message: "Séance prête avec la liste officielle." });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -54,15 +54,14 @@ app.post('/demarrer-seance', async (req, res) => {
 app.post('/valider-presence', async (req, res) => {
     try {
         const { nom, date, matiere, typeSeance } = req.body;
-        
         let seanceExistante = await Seance.findOne({ date: date, matiere: matiere });
-        if (!seanceExistante) {
-            return res.status(400).json({ error: "Séance introuvable." });
-        }
+
+        if (!seanceExistante) return res.status(400).json({ error: "Séance non démarrée." });
 
         const nomSaisi = nom.trim().toLowerCase();
         let etudiantTrouve = false;
 
+        // Recherche dans la liste de la séance
         for (let i = 0; i < seanceExistante.etudiants.length; i++) {
             if (seanceExistante.etudiants[i].nom.toLowerCase() === nomSaisi) {
                 if (typeSeance === "Séance 1") seanceExistante.etudiants[i].s1 = "Présent";
@@ -73,23 +72,21 @@ app.post('/valider-presence', async (req, res) => {
         }
 
         if (!etudiantTrouve) {
-            return res.status(400).json({ error: "❌ Étudiant introuvable dans la base de données officielle." });
+            return res.status(400).json({ error: "❌ Étudiant introuvable dans la base officielle." });
         }
 
         seanceExistante.markModified('etudiants');
         await seanceExistante.save();
-
-        res.json({ message: "Présence enregistrée avec succès !" });
+        res.json({ message: "✅ Présence enregistrée !" });
     } catch (err) {
         res.status(500).json({ error: "Erreur serveur" });
     }
 });
 
-// ROUTE 3 : ARCHIVES
 app.get('/archives', async (req, res) => {
     const data = await Seance.find().sort({ _id: -1 });
     res.json(data);
 });
 
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`🚀 Serveur actif sur port ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Port ${PORT}`));
