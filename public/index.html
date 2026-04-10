@@ -1,1 +1,121 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Système de Présence — EPT</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap');
+  :root {
+    --bg:#07090f; --surface:#0f1623; --border:#1a2540;
+    --accent:#00d4ff; --purple:#7c3aed; --success:#10b981;
+    --text:#e2e8f0; --muted:#64748b;
+    --mono:'Space Mono',monospace; --sans:'Syne',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body {
+    background:var(--bg); color:var(--text); font-family:var(--sans);
+    min-height:100vh; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; padding:2rem 1rem;
+    overflow:hidden; position:relative;
+  }
+  .bg-orb { position:fixed; border-radius:50%; filter:blur(80px); opacity:0.12; pointer-events:none; animation:float 8s ease-in-out infinite; }
+  .orb1 { width:500px; height:500px; background:var(--accent); top:-150px; left:-150px; animation-delay:0s; }
+  .orb2 { width:400px; height:400px; background:var(--purple); bottom:-100px; right:-100px; animation-delay:4s; }
+  @keyframes float { 0%,100%{transform:translate(0,0)} 50%{transform:translate(30px,-30px)} }
 
+  .logo { text-align:center; margin-bottom:3.5rem; position:relative; z-index:1; }
+  .logo-badge { display:inline-block; font-family:var(--mono); font-size:0.65rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--accent); background:rgba(0,212,255,0.08); border:1px solid rgba(0,212,255,0.2); padding:0.3rem 1rem; border-radius:99px; margin-bottom:1rem; }
+  .logo h1 { font-size:clamp(1.8rem,5vw,3rem); font-weight:800; letter-spacing:-0.04em; line-height:1.1; background:linear-gradient(135deg,#fff 0%,rgba(255,255,255,0.5) 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+  .logo p { font-family:var(--mono); font-size:0.75rem; color:var(--muted); margin-top:0.75rem; letter-spacing:0.08em; }
+
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; max-width:780px; width:100%; position:relative; z-index:1; }
+
+  .panel { border-radius:24px; padding:2.5rem 2rem; text-align:center; cursor:pointer; transition:transform 0.3s,box-shadow 0.3s; position:relative; overflow:hidden; text-decoration:none; display:block; }
+  .panel::before { content:''; position:absolute; inset:0; border-radius:24px; opacity:0; transition:opacity 0.3s; }
+  .panel:hover { transform:translateY(-6px); }
+  .panel:hover::before { opacity:1; }
+
+  .panel-prof { background:linear-gradient(145deg,#0d1f3c,#0a1628); border:1px solid rgba(0,212,255,0.2); }
+  .panel-prof:hover { box-shadow:0 20px 60px rgba(0,212,255,0.15),0 0 0 1px rgba(0,212,255,0.3); border-color:rgba(0,212,255,0.4); }
+  .panel-prof::before { background:radial-gradient(ellipse at top,rgba(0,212,255,0.05),transparent); }
+
+  .panel-admin { background:linear-gradient(145deg,#1a0d3c,#110a28); border:1px solid rgba(124,58,237,0.2); }
+  .panel-admin:hover { box-shadow:0 20px 60px rgba(124,58,237,0.2),0 0 0 1px rgba(124,58,237,0.4); border-color:rgba(124,58,237,0.4); }
+  .panel-admin::before { background:radial-gradient(ellipse at top,rgba(124,58,237,0.07),transparent); }
+
+  .panel-icon { font-size:3.5rem; margin-bottom:1.25rem; display:block; filter:drop-shadow(0 4px 12px rgba(0,0,0,0.5)); }
+  .panel-title { font-size:1.4rem; font-weight:800; margin-bottom:0.5rem; letter-spacing:-0.02em; }
+  .panel-prof .panel-title  { color:var(--accent); }
+  .panel-admin .panel-title { color:#a78bfa; }
+  .panel-desc { font-family:var(--mono); font-size:0.72rem; color:var(--muted); line-height:1.8; margin-bottom:1.75rem; }
+
+  .panel-features { list-style:none; text-align:left; margin-bottom:1.75rem; }
+  .panel-features li { font-family:var(--mono); font-size:0.68rem; color:var(--muted); padding:0.3rem 0; display:flex; align-items:center; gap:0.5rem; }
+  .panel-prof  .panel-features li::before { content:'→'; color:var(--accent); }
+  .panel-admin .panel-features li::before { content:'→'; color:#a78bfa; }
+
+  .panel-btn { display:block; padding:0.85rem 1.5rem; border-radius:12px; font-family:var(--sans); font-weight:700; font-size:0.9rem; transition:all 0.2s; position:relative; z-index:1; }
+  .panel-prof  .panel-btn { background:linear-gradient(135deg,var(--accent),#0090b3); color:#000; }
+  .panel-admin .panel-btn { background:linear-gradient(135deg,#7c3aed,#5b21b6); color:#fff; }
+  .panel:hover .panel-btn  { box-shadow:0 6px 20px rgba(0,0,0,0.3); transform:scale(1.02); }
+
+  .divider-center { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:40px; height:40px; background:var(--bg); border:1px solid var(--border); border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:var(--mono); font-size:0.65rem; color:var(--muted); z-index:2; }
+
+  footer { margin-top:2.5rem; font-family:var(--mono); font-size:0.65rem; color:var(--muted); letter-spacing:0.08em; text-align:center; position:relative; z-index:1; opacity:0.6; }
+
+  .logo,.grid,footer { animation:fadeUp 0.6s ease both; }
+  .grid  { animation-delay:0.15s; }
+  footer { animation-delay:0.3s; }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+
+  @media(max-width:600px) {
+    .grid { grid-template-columns:1fr; }
+    .divider-center { display:none; }
+    .panel { padding:2rem 1.5rem; }
+  }
+</style>
+</head>
+<body>
+<div class="bg-orb orb1"></div>
+<div class="bg-orb orb2"></div>
+
+<div class="logo">
+  <div class="logo-badge">EPT — École Polytechnique de Tunisie</div>
+  <h1>Système de Présence<br>par QR Code</h1>
+  <p>AUTHENTIFICATION SÉCURISÉE · RÉSEAU LOCAL · TEMPS RÉEL</p>
+</div>
+
+<div class="grid">
+  <a href="/login-prof.html" class="panel panel-prof">
+    <span class="panel-icon">👨‍🏫</span>
+    <div class="panel-title">Espace Professeur</div>
+    <p class="panel-desc">Connectez-vous avec votre<br>email @ept.ucar.tn</p>
+    <ul class="panel-features">
+      <li>Pointer votre propre présence</li>
+      <li>Démarrer une séance QR</li>
+      <li>Voir la liste de vos séances</li>
+      <li>Logs de sécurité</li>
+    </ul>
+    <span class="panel-btn">Connexion Professeur →</span>
+  </a>
+
+  <div class="divider-center">ou</div>
+
+  <a href="/login-admin.html" class="panel panel-admin">
+    <span class="panel-icon">🛡️</span>
+    <div class="panel-title">Espace Admin</div>
+    <p class="panel-desc">Accès total aux archives<br>et statistiques globales</p>
+    <ul class="panel-features">
+      <li>Présences de tous les profs</li>
+      <li>Toutes les séances étudiants</li>
+      <li>Liste des professeurs inscrits</li>
+      <li>Statistiques globales</li>
+    </ul>
+    <span class="panel-btn">Connexion Admin →</span>
+  </a>
+</div>
+
+<footer>© 2024 EPT · Système sécurisé · Réseau WiFi requis</footer>
+</body>
+</html>
