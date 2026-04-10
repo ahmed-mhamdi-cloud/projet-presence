@@ -1,1 +1,329 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Admin — EPT</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap');
+  :root {
+    --bg:#07090f; --surface:#0f1623; --border:#1a2540;
+    --purple:#7c3aed; --accent:#00d4ff; --success:#10b981;
+    --danger:#ef4444; --warn:#f59e0b; --text:#e2e8f0; --muted:#64748b;
+    --mono:'Space Mono',monospace; --sans:'Syne',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body {
+    background:var(--bg); color:var(--text); font-family:var(--sans);
+    min-height:100vh;
+    background-image:radial-gradient(ellipse at 80% 0%,rgba(124,58,237,0.07) 0%,transparent 55%);
+  }
 
+  nav {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:1rem 1.5rem; border-bottom:1px solid var(--border);
+    background:rgba(15,22,35,0.95); backdrop-filter:blur(12px);
+    position:sticky; top:0; z-index:100;
+  }
+  .nav-brand { font-size:0.85rem; font-weight:800; font-family:var(--mono); }
+  .nav-brand span { color:#a78bfa; }
+  .btn-logout { font-family:var(--mono); font-size:0.68rem; color:var(--muted); background:none; border:1px solid var(--border); border-radius:6px; padding:0.35rem 0.75rem; cursor:pointer; transition:all 0.2s; }
+  .btn-logout:hover { border-color:var(--danger); color:var(--danger); }
+
+  main { max-width:960px; margin:0 auto; padding:2rem 1rem 4rem; }
+
+  /* STATS */
+  .stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:1rem; margin-bottom:2.5rem; }
+  .stat-card {
+    background:var(--surface); border:1px solid var(--border); border-radius:14px;
+    padding:1.25rem; text-align:center;
+  }
+  .stat-card .stat-val { font-size:2rem; font-weight:800; margin-bottom:0.25rem; }
+  .stat-card .stat-label { font-family:var(--mono); font-size:0.65rem; color:var(--muted); letter-spacing:0.08em; text-transform:uppercase; }
+  .stat-card.purple .stat-val { color:#a78bfa; }
+  .stat-card.blue   .stat-val { color:var(--accent); }
+  .stat-card.green  .stat-val { color:var(--success); }
+  .stat-card.orange .stat-val { color:var(--warn); }
+
+  /* TABS navigation */
+  .main-tabs { display:flex; gap:0.5rem; margin-bottom:2rem; flex-wrap:wrap; }
+  .main-tab {
+    padding:0.5rem 1.1rem; border-radius:8px; font-family:var(--mono);
+    font-size:0.72rem; cursor:pointer; border:1px solid var(--border);
+    background:transparent; color:var(--muted); transition:all 0.2s; letter-spacing:0.05em;
+  }
+  .main-tab.active { background:rgba(124,58,237,0.15); border-color:rgba(124,58,237,0.4); color:#a78bfa; }
+  .main-tab:hover:not(.active) { border-color:var(--border); color:var(--text); }
+
+  .tab-pane { display:none; }
+  .tab-pane.active { display:block; }
+
+  /* Section label */
+  .section-label { font-family:var(--mono); font-size:0.65rem; letter-spacing:0.12em; text-transform:uppercase; color:#a78bfa; margin-bottom:0.75rem; }
+
+  /* Cards */
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:14px; overflow:hidden; margin-bottom:1.25rem; }
+  .card-head { display:flex; justify-content:space-between; align-items:center; padding:0.9rem 1.25rem; border-bottom:1px solid var(--border); flex-wrap:wrap; gap:0.5rem; }
+  .card-head-title { font-size:0.9rem; font-weight:700; }
+  .card-head-sub   { font-family:var(--mono); font-size:0.7rem; color:var(--muted); }
+  .card-stats { display:flex; gap:1.25rem; padding:0.5rem 1.25rem; border-bottom:1px solid var(--border); flex-wrap:wrap; }
+  .c-stat { font-family:var(--mono); font-size:0.68rem; color:var(--muted); }
+  .c-stat strong { color:var(--text); }
+
+  /* Prof list */
+  .prof-row { display:flex; align-items:center; justify-content:space-between; padding:0.85rem 1.25rem; border-bottom:1px solid rgba(26,37,64,0.5); flex-wrap:wrap; gap:0.5rem; }
+  .prof-row:last-child { border-bottom:none; }
+  .prof-name  { font-weight:700; font-size:0.9rem; margin-bottom:0.15rem; }
+  .prof-email { font-family:var(--mono); font-size:0.68rem; color:var(--muted); }
+  .prof-mat   { font-family:var(--mono); font-size:0.72rem; padding:0.25rem 0.7rem; border-radius:99px; background:rgba(0,212,255,0.08); color:var(--accent); border:1px solid rgba(0,212,255,0.2); }
+
+  /* Présences profs */
+  .pp-row { display:flex; align-items:center; justify-content:space-between; padding:0.75rem 1.25rem; border-bottom:1px solid rgba(26,37,64,0.5); flex-wrap:wrap; gap:0.5rem; }
+  .pp-row:last-child { border-bottom:none; }
+  .pp-nom  { font-weight:600; font-size:0.85rem; }
+  .pp-info { font-family:var(--mono); font-size:0.68rem; color:var(--muted); }
+  .pp-heure { font-family:var(--mono); font-size:0.7rem; padding:0.2rem 0.65rem; border-radius:99px; background:rgba(16,185,129,0.1); color:var(--success); border:1px solid rgba(16,185,129,0.2); }
+
+  /* Table */
+  .table-wrap { overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; }
+  th { font-family:var(--mono); font-size:0.6rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); padding:0.65rem 1.25rem; text-align:left; border-bottom:1px solid var(--border); }
+  td { font-family:var(--mono); font-size:0.78rem; padding:0.65rem 1.25rem; border-top:1px solid rgba(26,37,64,0.4); }
+  tr:hover td { background:rgba(124,58,237,0.02); }
+
+  .badge { display:inline-flex; align-items:center; gap:0.3rem; padding:0.22rem 0.65rem; border-radius:99px; font-family:var(--mono); font-size:0.65rem; }
+  .badge-ok     { background:rgba(16,185,129,0.1); color:var(--success); border:1px solid rgba(16,185,129,0.25); }
+  .badge-absent { background:rgba(239,68,68,0.08); color:var(--danger);  border:1px solid rgba(239,68,68,0.2); }
+
+  /* Filter */
+  .filter-row { display:flex; gap:0.75rem; margin-bottom:1rem; flex-wrap:wrap; }
+  .filter-input {
+    background:var(--surface); border:1px solid var(--border); border-radius:8px;
+    color:var(--text); font-family:var(--mono); font-size:0.78rem;
+    padding:0.55rem 0.85rem; outline:none; flex:1; min-width:180px;
+  }
+  .filter-input:focus { border-color:var(--purple); }
+
+  #loading { text-align:center; font-family:var(--mono); font-size:0.78rem; color:var(--muted); padding:2.5rem; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand">🛡 <span>Admin</span> — EPT Présences</div>
+  <button class="btn-logout" onclick="logout()">Déconnexion</button>
+</nav>
+
+<main>
+  <!-- Stats -->
+  <div class="stats-grid" id="stats-grid">
+    <div class="stat-card purple"><div class="stat-val" id="s-profs">—</div><div class="stat-label">Professeurs</div></div>
+    <div class="stat-card blue">  <div class="stat-val" id="s-seances">—</div><div class="stat-label">Séances</div></div>
+    <div class="stat-card green"> <div class="stat-val" id="s-pp">—</div><div class="stat-label">Pointages Profs</div></div>
+    <div class="stat-card orange"><div class="stat-val" id="s-presS1">—</div><div class="stat-label">Présences S1</div></div>
+    <div class="stat-card green"> <div class="stat-val" id="s-presS2">—</div><div class="stat-label">Présences S2</div></div>
+  </div>
+
+  <!-- Onglets -->
+  <div class="main-tabs">
+    <button class="main-tab active" onclick="showTab('profs')">👨‍🏫 Professeurs inscrits</button>
+    <button class="main-tab"        onclick="showTab('pointages')">📍 Pointages Profs</button>
+    <button class="main-tab"        onclick="showTab('seances')">📋 Séances Étudiants</button>
+  </div>
+
+  <!-- TAB 1 : Professeurs -->
+  <div class="tab-pane active" id="tab-profs">
+    <p class="section-label">Liste des professeurs enregistrés</p>
+    <div id="loading-profs" class="card" style="padding:2rem;text-align:center;font-family:var(--mono);font-size:0.78rem;color:var(--muted);">⏳ Chargement…</div>
+    <div id="list-profs"></div>
+  </div>
+
+  <!-- TAB 2 : Pointages Profs -->
+  <div class="tab-pane" id="tab-pointages">
+    <p class="section-label">Historique des pointages des professeurs</p>
+    <div class="filter-row">
+      <input class="filter-input" id="filter-pp" placeholder="🔍 Filtrer par nom ou matière…" oninput="filtrerPointages()" />
+    </div>
+    <div id="loading-pp" class="card" style="padding:2rem;text-align:center;font-family:var(--mono);font-size:0.78rem;color:var(--muted);">⏳ Chargement…</div>
+    <div id="list-pp"></div>
+  </div>
+
+  <!-- TAB 3 : Séances étudiants -->
+  <div class="tab-pane" id="tab-seances">
+    <p class="section-label">Toutes les séances — tous les professeurs</p>
+    <div class="filter-row">
+      <input class="filter-input" id="filter-seances" placeholder="🔍 Filtrer par matière ou professeur…" oninput="filtrerSeances()" />
+    </div>
+    <div id="loading-seances" class="card" style="padding:2rem;text-align:center;font-family:var(--mono);font-size:0.78rem;color:var(--muted);">⏳ Chargement…</div>
+    <div id="list-seances"></div>
+  </div>
+
+</main>
+
+<script>
+  const token = localStorage.getItem('admin_token');
+  if (!token) window.location.href = '/login-admin.html';
+
+  function logout() {
+    localStorage.removeItem('admin_token');
+    window.location.href = '/';
+  }
+
+  function authHeaders() {
+    return { 'Content-Type':'application/json', 'Authorization': `Bearer ${token}` };
+  }
+
+  function showTab(name) {
+    document.querySelectorAll('.main-tab').forEach((el,i)=>el.classList.toggle('active',(['profs','pointages','seances'][i])===name));
+    document.querySelectorAll('.tab-pane').forEach(el=>el.classList.remove('active'));
+    document.getElementById(`tab-${name}`).classList.add('active');
+  }
+
+  // ── Charger stats
+  async function chargerStats() {
+    try {
+      const res  = await fetch('/admin/stats',{headers:authHeaders()});
+      if(res.status===401||res.status===403){logout();return;}
+      const d    = await res.json();
+      document.getElementById('s-profs').textContent  = d.nbProfs;
+      document.getElementById('s-seances').textContent= d.nbSeances;
+      document.getElementById('s-pp').textContent     = d.nbPresencesProfs;
+      document.getElementById('s-presS1').textContent = d.totalPresentsS1;
+      document.getElementById('s-presS2').textContent = d.totalPresentsS2;
+    } catch {}
+  }
+
+  // ── Charger professeurs
+  async function chargerProfs() {
+    try {
+      const res   = await fetch('/admin/profs',{headers:authHeaders()});
+      const profs = await res.json();
+      document.getElementById('loading-profs').style.display='none';
+      const cont  = document.getElementById('list-profs');
+
+      if(!profs||profs.length===0){
+        cont.innerHTML='<div class="card" style="padding:1.5rem;text-align:center;font-family:var(--mono);font-size:0.78rem;color:var(--muted);">Aucun professeur inscrit.</div>';
+        return;
+      }
+
+      const card=document.createElement('div'); card.className='card';
+      profs.forEach(p=>{
+        const row=document.createElement('div'); row.className='prof-row';
+        const dateInscription = p.createdAt ? new Date(p.createdAt).toLocaleDateString('fr-FR') : '—';
+        row.innerHTML=`
+          <div>
+            <div class="prof-name">${p.nom}</div>
+            <div class="prof-email">${p.email} · Inscrit le ${dateInscription}</div>
+          </div>
+          <span class="prof-mat">${p.matiere}</span>`;
+        card.appendChild(row);
+      });
+      cont.appendChild(card);
+    } catch { document.getElementById('loading-profs').textContent='❌ Erreur.'; }
+  }
+
+  // ── Charger pointages profs
+  let allPointages = [];
+  async function chargerPointages() {
+    try {
+      const res  = await fetch('/admin/presences-profs',{headers:authHeaders()});
+      allPointages = await res.json();
+      document.getElementById('loading-pp').style.display='none';
+      afficherPointages(allPointages);
+    } catch { document.getElementById('loading-pp').textContent='❌ Erreur.'; }
+  }
+
+  function afficherPointages(data) {
+    const cont = document.getElementById('list-pp');
+    cont.innerHTML='';
+    if(!data||data.length===0){
+      cont.innerHTML='<div class="card" style="padding:1.5rem;text-align:center;font-family:var(--mono);font-size:0.78rem;color:var(--muted);">Aucun pointage enregistré.</div>';
+      return;
+    }
+    const card=document.createElement('div'); card.className='card';
+    data.forEach(p=>{
+      const row=document.createElement('div'); row.className='pp-row';
+      row.innerHTML=`
+        <div>
+          <div class="pp-nom">${p.nom}</div>
+          <div class="pp-info">${p.email} · ${p.matiere} · 📅 ${p.date}</div>
+        </div>
+        <span class="pp-heure">✓ ${p.heure}</span>`;
+      card.appendChild(row);
+    });
+    cont.appendChild(card);
+  }
+
+  function filtrerPointages() {
+    const q = document.getElementById('filter-pp').value.toLowerCase();
+    afficherPointages(allPointages.filter(p=>
+      p.nom.toLowerCase().includes(q) || p.matiere.toLowerCase().includes(q) || p.email.toLowerCase().includes(q)
+    ));
+  }
+
+  // ── Charger séances étudiants
+  let allSeances = [];
+  async function chargerSeances() {
+    try {
+      const res  = await fetch('/admin/seances',{headers:authHeaders()});
+      allSeances = await res.json();
+      document.getElementById('loading-seances').style.display='none';
+      afficherSeances(allSeances);
+    } catch { document.getElementById('loading-seances').textContent='❌ Erreur.'; }
+  }
+
+  function afficherSeances(data) {
+    const cont = document.getElementById('list-seances');
+    cont.innerHTML='';
+    if(!data||data.length===0){
+      cont.innerHTML='<div class="card" style="padding:1.5rem;text-align:center;font-family:var(--mono);font-size:0.78rem;color:var(--muted);">Aucune séance enregistrée.</div>';
+      return;
+    }
+    data.forEach(s=>{
+      const etudiants=s.etudiants||[];
+      const pS1=etudiants.filter(e=>e.s1==="Present").length;
+      const pS2=etudiants.filter(e=>e.s2==="Present").length;
+      let dateAff=s.date;
+      try{dateAff=new Date(s.date+'T00:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});}catch{}
+
+      const lignes=etudiants.map(e=>{
+        const cs1=e.s1==="Present"?'badge-ok':'badge-absent';
+        const cs2=e.s2==="Present"?'badge-ok':'badge-absent';
+        return `<tr><td>${e.nom}</td><td><span class="badge ${cs1}">${e.s1==="Present"?'✓':''} ${e.s1}</span></td><td><span class="badge ${cs2}">${e.s2==="Present"?'✓':''} ${e.s2}</span></td></tr>`;
+      }).join('');
+
+      const card=document.createElement('div'); card.className='card';
+      card.innerHTML=`
+        <div class="card-head">
+          <div>
+            <div class="card-head-title">${s.matiere}</div>
+            <div class="card-head-sub">Prof : ${s.profNom||'—'} · ${dateAff}</div>
+          </div>
+          <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+            <span style="font-family:var(--mono);font-size:0.68rem;color:var(--success);">S1: ${pS1}/${etudiants.length}</span>
+            <span style="font-family:var(--mono);font-size:0.68rem;color:var(--accent);">S2: ${pS2}/${etudiants.length}</span>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table><thead><tr><th>Nom</th><th>Séance 1</th><th>Séance 2</th></tr></thead>
+          <tbody>${lignes}</tbody></table>
+        </div>`;
+      cont.appendChild(card);
+    });
+  }
+
+  function filtrerSeances() {
+    const q = document.getElementById('filter-seances').value.toLowerCase();
+    afficherSeances(allSeances.filter(s=>
+      s.matiere.toLowerCase().includes(q) || (s.profNom||'').toLowerCase().includes(q)
+    ));
+  }
+
+  // ── Init
+  chargerStats();
+  chargerProfs();
+  chargerPointages();
+  chargerSeances();
+</script>
+</body>
+</html>

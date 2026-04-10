@@ -1,1 +1,66 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pointage Professeur</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap');
+  :root { --bg:#07090f; --surface:#0f1623; --border:#1a2540; --success:#10b981; --danger:#ef4444; --accent:#00d4ff; --text:#e2e8f0; --muted:#64748b; --mono:'Space Mono',monospace; --sans:'Syne',sans-serif; }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body { background:var(--bg); color:var(--text); font-family:var(--sans); min-height:100vh; display:flex; align-items:center; justify-content:center; padding:1.5rem; }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:2.25rem; width:100%; max-width:380px; text-align:center; animation:up 0.4s ease; }
+  @keyframes up{from{opacity:0;transform:translateY(20px)}to{opacity:1}}
+  .icon { font-size:3rem; margin-bottom:0.75rem; }
+  h1 { font-size:1.3rem; font-weight:800; margin-bottom:0.5rem; background:linear-gradient(135deg,var(--accent),#0090b3); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+  p.sub { font-family:var(--mono); font-size:0.72rem; color:var(--muted); margin-bottom:1.5rem; line-height:1.6; }
+  .btn { width:100%; padding:0.85rem; border-radius:10px; font-family:var(--sans); font-weight:700; font-size:0.9rem; cursor:pointer; border:none; background:linear-gradient(135deg,var(--success),#059669); color:#fff; transition:all 0.2s; }
+  .btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(16,185,129,0.25)}
+  .btn:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+  .result{display:none;margin-top:1rem;padding:0.85rem;border-radius:10px;font-family:var(--mono);font-size:0.8rem;}
+  .result.ok{background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.25);color:var(--success)}
+  .result.err{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);color:var(--danger)}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="icon">📍</div>
+  <h1>Pointage Professeur</h1>
+  <p class="sub">Confirmez votre présence<br>en appuyant sur le bouton ci-dessous</p>
+  <button class="btn" id="btn" onclick="pointer()">✅ Valider ma présence</button>
+  <div class="result" id="result"></div>
+</div>
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const token  = params.get('token');
 
+  if (!token) {
+    document.getElementById('result').textContent = 'Lien invalide. Régénérez le QR depuis votre tableau de bord.';
+    document.getElementById('result').className = 'result err';
+    document.getElementById('result').style.display = 'block';
+    document.getElementById('btn').disabled = true;
+  }
+
+  async function pointer() {
+    const btn = document.getElementById('btn');
+    btn.disabled = true; btn.textContent = '⏳ Validation…';
+    try {
+      const res  = await fetch('/prof/pointer-presence', {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json', 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      const r    = document.getElementById('result');
+      r.textContent = res.ok ? data.message : data.error;
+      r.className   = `result ${res.ok ? 'ok' : 'err'}`;
+      r.style.display = 'block';
+      if (!res.ok) { btn.disabled=false; btn.textContent='✅ Valider ma présence'; }
+    } catch {
+      const r = document.getElementById('result');
+      r.textContent = 'Erreur réseau.'; r.className='result err'; r.style.display='block';
+      btn.disabled=false; btn.textContent='✅ Valider ma présence';
+    }
+  }
+</script>
+</body>
+</html>

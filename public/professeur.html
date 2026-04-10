@@ -3,517 +3,384 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Interface Professeur — Présence QR</title>
+<title>Dashboard Professeur — EPT</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap');
-
   :root {
-    --bg:       #0a0e1a;
-    --surface:  #111827;
-    --border:   #1e2d45;
-    --accent:   #00d4ff;
-    --accent2:  #7c3aed;
-    --success:  #10b981;
-    --danger:   #ef4444;
-    --warn:     #f59e0b;
-    --text:     #e2e8f0;
-    --muted:    #64748b;
-    --mono:     'Space Mono', monospace;
-    --sans:     'Syne', sans-serif;
+    --bg:#07090f; --surface:#0f1623; --border:#1a2540;
+    --accent:#00d4ff; --accent2:#7c3aed; --success:#10b981;
+    --danger:#ef4444; --warn:#f59e0b; --text:#e2e8f0; --muted:#64748b;
+    --mono:'Space Mono',monospace; --sans:'Syne',sans-serif;
   }
-
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
+  *{margin:0;padding:0;box-sizing:border-box}
   body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--sans);
-    min-height: 100vh;
-    padding: 2rem 1rem;
-    background-image:
-      radial-gradient(ellipse at 20% 0%, rgba(0,212,255,0.07) 0%, transparent 60%),
-      radial-gradient(ellipse at 80% 100%, rgba(124,58,237,0.07) 0%, transparent 60%);
+    background:var(--bg); color:var(--text); font-family:var(--sans);
+    min-height:100vh; padding:0;
+    background-image: radial-gradient(ellipse at 20% 0%,rgba(0,212,255,0.06) 0%,transparent 55%);
   }
 
-  header {
-    text-align: center;
-    margin-bottom: 2.5rem;
+  /* NAV */
+  nav {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:1rem 1.5rem; border-bottom:1px solid var(--border);
+    background:rgba(15,22,35,0.95); backdrop-filter:blur(12px);
+    position:sticky; top:0; z-index:100;
   }
-
-  header h1 {
-    font-size: 2rem;
-    font-weight: 800;
-    letter-spacing: -0.03em;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+  .nav-brand { font-size:0.85rem; font-weight:800; color:var(--accent); font-family:var(--mono); }
+  .nav-user  { font-family:var(--mono); font-size:0.7rem; color:var(--muted); }
+  .nav-user span { color:var(--text); }
+  .btn-logout {
+    font-family:var(--mono); font-size:0.68rem; color:var(--muted); background:none;
+    border:1px solid var(--border); border-radius:6px; padding:0.35rem 0.75rem;
+    cursor:pointer; transition:all 0.2s; margin-left:1rem;
   }
+  .btn-logout:hover { border-color:var(--danger); color:var(--danger); }
 
-  header p {
-    color: var(--muted);
-    font-family: var(--mono);
-    font-size: 0.75rem;
-    margin-top: 0.4rem;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-  }
+  main { max-width:600px; margin:0 auto; padding:2rem 1rem; }
 
-  .btn-archives-header {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.6rem 1.25rem;
-    border-radius: 10px;
-    border: 1px solid rgba(124,58,237,0.4);
-    background: rgba(124,58,237,0.08);
-    color: #a78bfa;
-    font-family: var(--mono);
-    font-size: 0.75rem;
-    cursor: pointer;
-    text-decoration: none;
-    transition: all 0.2s;
-    margin-top: 1rem;
-    letter-spacing: 0.05em;
-  }
-
-  .btn-archives-header:hover {
-    background: rgba(124,58,237,0.18);
-    border-color: var(--accent2);
-    color: #c4b5fd;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 16px rgba(124,58,237,0.2);
+  /* SECTION HEADER */
+  .section-label {
+    font-family:var(--mono); font-size:0.65rem; letter-spacing:0.12em;
+    text-transform:uppercase; color:var(--accent); margin-bottom:0.6rem;
   }
 
   .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 1.75rem;
-    max-width: 520px;
-    margin: 0 auto 1.5rem;
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:16px; padding:1.5rem; margin-bottom:1.5rem;
   }
 
-  .card h2 {
-    font-size: 0.75rem;
-    font-family: var(--mono);
-    color: var(--accent);
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    margin-bottom: 1.25rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 1px solid var(--border);
+  /* BADGE POINTAGE */
+  .presence-status {
+    display:flex; align-items:center; justify-content:space-between;
+    gap:1rem; flex-wrap:wrap;
   }
+  .presence-info { flex:1; }
+  .presence-info h3 { font-size:1rem; font-weight:700; margin-bottom:0.25rem; }
+  .presence-info p  { font-family:var(--mono); font-size:0.7rem; color:var(--muted); }
 
-  .form-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-    margin-bottom: 1rem;
-  }
+  /* QR code pointer */
+  #qr-pointer { display:none; text-align:center; margin-top:1rem; }
+  #qrcode-pointer { display:inline-block; background:#fff; padding:12px; border-radius:10px; }
 
-  .form-group { display: flex; flex-direction: column; gap: 0.5rem; }
-
-  label {
-    font-size: 0.7rem;
-    font-family: var(--mono);
-    color: var(--muted);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-
+  /* Formulaire séance */
+  .form-row { display:grid; grid-template-columns:1fr auto; gap:1rem; align-items:end; }
+  label { display:block; font-family:var(--mono); font-size:0.65rem; color:var(--muted); letter-spacing:0.08em; text-transform:uppercase; margin-bottom:0.4rem; }
   input, select {
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    color: var(--text);
-    font-family: var(--mono);
-    font-size: 0.85rem;
-    padding: 0.65rem 0.9rem;
-    outline: none;
-    transition: border-color 0.2s;
-    width: 100%;
+    background:var(--bg); border:1px solid var(--border); border-radius:8px;
+    color:var(--text); font-family:var(--mono); font-size:0.85rem;
+    padding:0.65rem 0.9rem; outline:none; transition:border-color 0.2s; width:100%;
   }
-
-  input:focus, select:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(0,212,255,0.08);
-  }
+  input:focus,select:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(0,212,255,0.08); }
 
   .btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    padding: 0.8rem 1.5rem;
-    border-radius: 10px;
-    font-family: var(--sans);
-    font-weight: 600;
-    font-size: 0.9rem;
-    cursor: pointer;
-    border: none;
-    transition: all 0.2s;
-    width: 100%;
-    margin-top: 0.75rem;
-    text-decoration: none;
+    display:inline-flex; align-items:center; justify-content:center; gap:0.4rem;
+    padding:0.75rem 1.25rem; border-radius:10px; font-family:var(--sans);
+    font-weight:700; font-size:0.85rem; cursor:pointer; border:none;
+    transition:all 0.2s; white-space:nowrap;
   }
-
-  .btn-primary {
-    background: linear-gradient(135deg, var(--accent), #0090b3);
-    color: #000;
+  .btn-primary { background:linear-gradient(135deg,var(--accent),#0090b3); color:#000; }
+  .btn-primary:hover { box-shadow:0 6px 18px rgba(0,212,255,0.25); transform:translateY(-1px); }
+  .btn-sm { padding:0.5rem 1rem; font-size:0.75rem; }
+  .btn-outline { background:transparent; border:1px solid var(--border); color:var(--muted); }
+  .btn-outline:hover { border-color:var(--accent); color:var(--accent); }
+  .btn-danger-outline { background:transparent; border:1px solid rgba(239,68,68,0.3); color:var(--danger); font-size:0.75rem; padding:0.4rem 0.8rem; }
+  .btn-pointer {
+    background:linear-gradient(135deg,var(--success),#059669); color:#fff;
+    padding:0.7rem 1.25rem;
   }
+  .btn-pointer:hover { box-shadow:0 6px 18px rgba(16,185,129,0.25); }
+  .btn-renew { background:transparent; border:1px solid var(--accent2); color:#a78bfa; width:100%; margin-top:0.5rem; }
+  .btn-renew:hover { background:rgba(124,58,237,0.1); }
+  .btn-full { width:100%; }
 
-  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,212,255,0.3); }
+  /* QR Séance */
+  #qr-zone { display:none; text-align:center; margin-top:1.25rem; }
+  #qrcode   { display:inline-block; background:#fff; padding:14px; border-radius:12px; margin:0.75rem 0; }
+  #timer-bar { height:5px; border-radius:3px; background:var(--border); overflow:hidden; margin:0.5rem 0; }
+  #timer-fill { height:100%; border-radius:3px; background:linear-gradient(90deg,var(--success),var(--accent)); transition:width 1s linear; }
+  #timer-text { font-family:var(--mono); font-size:0.72rem; color:var(--muted); }
 
-  .btn-renew {
-    background: transparent;
-    border: 1px solid var(--accent2);
-    color: var(--accent2);
-  }
+  /* Badges */
+  .badge { display:inline-flex; align-items:center; gap:0.3rem; padding:0.25rem 0.65rem; border-radius:99px; font-family:var(--mono); font-size:0.68rem; }
+  .badge-ok     { background:rgba(16,185,129,0.1); color:var(--success); border:1px solid rgba(16,185,129,0.25); }
+  .badge-warn   { background:rgba(245,158,11,0.1);  color:var(--warn);    border:1px solid rgba(245,158,11,0.25); }
+  .badge-absent { background:rgba(239,68,68,0.08);  color:var(--danger);  border:1px solid rgba(239,68,68,0.2); }
 
-  .btn-renew:hover { background: rgba(124,58,237,0.1); }
+  /* Table séances */
+  .seance-card { background:var(--bg); border:1px solid var(--border); border-radius:12px; margin-bottom:1rem; overflow:hidden; }
+  .seance-head { display:flex; justify-content:space-between; align-items:center; padding:0.85rem 1rem; border-bottom:1px solid var(--border); }
+  .seance-head-title { font-family:var(--mono); font-size:0.8rem; color:var(--text); }
+  .seance-head-date  { font-family:var(--mono); font-size:0.7rem; color:var(--muted); }
+  .seance-stats { display:flex; gap:1rem; padding:0.5rem 1rem; border-bottom:1px solid var(--border); flex-wrap:wrap; }
+  .stat { font-family:var(--mono); font-size:0.68rem; color:var(--muted); }
+  .stat strong { color:var(--text); }
+  table { width:100%; border-collapse:collapse; }
+  th { font-family:var(--mono); font-size:0.62rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); padding:0.6rem 1rem; text-align:left; }
+  td { font-family:var(--mono); font-size:0.78rem; padding:0.65rem 1rem; border-top:1px solid rgba(26,37,64,0.5); }
+  tr:hover td { background:rgba(0,212,255,0.02); }
 
-  .btn-logs {
-    background: transparent;
-    border: 1px solid var(--border);
-    color: var(--muted);
-    font-size: 0.75rem;
-    padding: 0.5rem 1rem;
-    margin-top: 0.5rem;
-  }
+  /* Logs */
+  #logs-panel { display:none; margin-top:0.75rem; }
+  .log-entry { display:flex; justify-content:space-between; padding:0.5rem 0.75rem; border-radius:7px; font-family:var(--mono); font-size:0.68rem; margin-bottom:0.3rem; background:rgba(239,68,68,0.06); border:1px solid rgba(239,68,68,0.15); color:var(--danger); word-break:break-all; }
+  .log-time { color:var(--muted); white-space:nowrap; margin-left:0.5rem; flex-shrink:0; }
 
-  .btn-logs:hover { border-color: var(--warn); color: var(--warn); }
+  /* Toast */
+  #toast { position:fixed; bottom:1.5rem; right:1.5rem; padding:0.85rem 1.25rem; border-radius:10px; font-family:var(--mono); font-size:0.8rem; opacity:0; transform:translateY(12px); transition:all 0.25s; z-index:999; max-width:300px; }
+  #toast.show { opacity:1; transform:translateY(0); }
+  #toast.ok   { background:rgba(16,185,129,0.9); color:#fff; }
+  #toast.err  { background:rgba(239,68,68,0.9);  color:#fff; }
 
-  .btn-archives {
-    background: transparent;
-    border: 1px solid rgba(124,58,237,0.35);
-    color: #a78bfa;
-    font-size: 0.82rem;
-    margin-top: 0.75rem;
-  }
-
-  .btn-archives:hover {
-    background: rgba(124,58,237,0.1);
-    border-color: var(--accent2);
-    color: #c4b5fd;
-  }
-
-  .divider {
-    border: none;
-    border-top: 1px solid var(--border);
-    margin: 1rem 0 0.25rem;
-  }
-
-  /* QR Zone */
-  #qr-zone { display: none; text-align: center; }
-
-  #qrcode {
-    display: inline-block;
-    padding: 16px;
-    background: #fff;
-    border-radius: 12px;
-    margin: 1rem 0;
-  }
-
-  #timer-bar {
-    height: 6px;
-    border-radius: 3px;
-    background: var(--border);
-    overflow: hidden;
-    margin: 0.75rem 0;
-  }
-
-  #timer-fill {
-    height: 100%;
-    border-radius: 3px;
-    background: linear-gradient(90deg, var(--success), var(--accent));
-    transition: width 1s linear, background 1s;
-  }
-
-  #timer-text {
-    font-family: var(--mono);
-    font-size: 0.8rem;
-    color: var(--muted);
-    margin-bottom: 0.5rem;
-  }
-
-  .badge-sec {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    font-family: var(--mono);
-    font-size: 0.7rem;
-    padding: 0.3rem 0.7rem;
-    border-radius: 99px;
-    margin: 0.25rem;
-  }
-
-  .badge-ok { background: rgba(16,185,129,0.1); color: var(--success); border: 1px solid rgba(16,185,129,0.3); }
-
-  #toast {
-    position: fixed;
-    bottom: 2rem;
-    right: 2rem;
-    padding: 1rem 1.5rem;
-    border-radius: 12px;
-    font-family: var(--mono);
-    font-size: 0.85rem;
-    opacity: 0;
-    transform: translateY(20px);
-    transition: all 0.3s;
-    z-index: 999;
-    max-width: 320px;
-  }
-
-  #toast.show { opacity: 1; transform: translateY(0); }
-  #toast.ok   { background: rgba(16,185,129,0.9); color: #fff; }
-  #toast.err  { background: rgba(239,68,68,0.9);  color: #fff; }
-
-  #logs-panel { display: none; margin-top: 1rem; }
-
-  .log-entry {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.6rem 0.8rem;
-    border-radius: 8px;
-    font-family: var(--mono);
-    font-size: 0.7rem;
-    margin-bottom: 0.4rem;
-    background: rgba(239,68,68,0.06);
-    border: 1px solid rgba(239,68,68,0.15);
-    color: var(--danger);
-    word-break: break-all;
-  }
-
-  .log-time { color: var(--muted); white-space: nowrap; margin-left: 0.5rem; flex-shrink: 0; }
-
-  @media (max-width: 480px) {
-    .form-row { grid-template-columns: 1fr; }
-  }
+  .divider { border:none; border-top:1px solid var(--border); margin:1rem 0; }
+  #loading { text-align:center; font-family:var(--mono); font-size:0.78rem; color:var(--muted); padding:2rem; }
 </style>
 </head>
 <body>
 
-<header>
-  <h1>Interface Professeur</h1>
-  <p>Système de Présence par QR Code — Sécurisé</p>
-  <br>
-  <a href="/archives.html" target="_blank" class="btn-archives-header">
-    📂 Accéder aux Archives
-  </a>
-</header>
-
-<!-- Formulaire -->
-<div class="card">
-  <h2>⚙ Configurer la Séance</h2>
-
-  <div class="form-row">
-    <div class="form-group">
-      <label>Matière</label>
-      <input type="text" id="matiere" placeholder="ex: Mathématiques" />
+<nav>
+  <div class="nav-brand">🎓 EPT — Espace Prof</div>
+  <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap">
+    <div class="nav-user">
+      <span id="nav-nom">—</span> &nbsp;·&nbsp; <span id="nav-matiere" style="color:var(--accent)">—</span>
     </div>
-    <div class="form-group">
-      <label>Date</label>
-      <input type="date" id="date" />
+    <button class="btn-logout" onclick="logout()">Déconnexion</button>
+  </div>
+</nav>
+
+<main>
+
+  <!-- 1. POINTER MA PRÉSENCE -->
+  <p class="section-label">01 · Ma Présence du jour</p>
+  <div class="card">
+    <div class="presence-status">
+      <div class="presence-info">
+        <h3>Pointage de présence</h3>
+        <p id="presence-date">—</p>
+      </div>
+      <div id="presence-badge"></div>
+    </div>
+    <div style="margin-top:1rem;">
+      <button class="btn btn-pointer btn-full" id="btn-pointer" onclick="afficherQRPointer()">
+        📱 Générer mon QR de pointage
+      </button>
+    </div>
+    <div id="qr-pointer">
+      <p style="font-family:var(--mono);font-size:0.72rem;color:var(--muted);margin-bottom:0.5rem;">
+        Scannez ce QR avec votre téléphone pour pointer votre présence
+      </p>
+      <div id="qrcode-pointer"></div>
+      <p style="font-family:var(--mono);font-size:0.68rem;color:var(--muted);">Valide 5 min · Une seule utilisation</p>
     </div>
   </div>
 
-  <div class="form-group">
-    <label>Type de Séance à ouvrir</label>
-    <select id="typeSeance">
-      <option value="Seance 1">Séance 1</option>
-      <option value="Seance 2">Séance 2</option>
-    </select>
-  </div>
-
-  <button class="btn btn-primary" onclick="demarrerSeance()">
-    ▶ Générer le QR Code
-  </button>
-
-  <hr class="divider">
-
-  <a href="/archives.html" target="_blank" class="btn btn-archives">
-    📂 Voir les listes de présence (Archives)
-  </a>
-
-  <div style="margin-top:1rem; text-align:center;">
-    <span class="badge-ok">✔ Token 15 min</span>
-    <span class="badge-ok">✔ IP unique / scan</span>
-    <span class="badge-ok">✔ Même réseau WiFi</span>
-    <span class="badge-ok">✔ Anti-brute-force</span>
-  </div>
-</div>
-
-<!-- Zone QR Code -->
-<div class="card" id="qr-zone">
-  <h2>📱 QR Code Actif</h2>
-
-  <div id="qrcode"></div>
-
-  <div id="timer-bar"><div id="timer-fill" style="width:100%"></div></div>
-  <p id="timer-text">⏳ Expiration dans <span id="countdown">15:00</span></p>
-
-  <button class="btn btn-renew" onclick="renouvelerToken()">
-    🔄 Renouveler le QR Code (15 min)
-  </button>
-
-  <button class="btn btn-logs" onclick="toggleLogs()">
-    🛡 Voir les logs de sécurité
-  </button>
-
-  <hr class="divider">
-
-  <a href="/archives.html" target="_blank" class="btn btn-archives">
-    📂 Voir les listes de présence (Archives)
-  </a>
-
-  <div id="logs-panel">
-    <div style="font-family:var(--mono);font-size:0.7rem;color:var(--muted);margin:0.75rem 0 0.5rem;">
-      TENTATIVES BLOQUÉES :
+  <!-- 2. DÉMARRER UNE SÉANCE -->
+  <p class="section-label">02 · Séance Étudiants</p>
+  <div class="card">
+    <div class="form-row">
+      <div>
+        <label>Date</label>
+        <input type="date" id="date" />
+      </div>
+      <div>
+        <label>Séance</label>
+        <select id="typeSeance">
+          <option value="Seance 1">Séance 1</option>
+          <option value="Seance 2">Séance 2</option>
+        </select>
+      </div>
     </div>
-    <div id="logs-list"></div>
+    <button class="btn btn-primary btn-full" onclick="demarrerSeance()" style="margin-top:0.75rem;">
+      ▶ Générer le QR Code Étudiant
+    </button>
+
+    <div id="qr-zone">
+      <div id="qrcode"></div>
+      <div id="timer-bar"><div id="timer-fill" style="width:100%"></div></div>
+      <p id="timer-text">⏳ <span id="countdown">15:00</span></p>
+      <button class="btn btn-renew" onclick="renouvelerToken()">🔄 Renouveler (15 min)</button>
+      <hr class="divider">
+      <button class="btn btn-outline btn-sm btn-full" onclick="toggleLogs()">🛡 Logs de sécurité</button>
+      <div id="logs-panel">
+        <div style="font-family:var(--mono);font-size:0.65rem;color:var(--muted);margin:0.5rem 0 0.3rem;">TENTATIVES BLOQUÉES :</div>
+        <div id="logs-list"></div>
+      </div>
+    </div>
   </div>
-</div>
+
+  <!-- 3. MES SÉANCES (ARCHIVES) -->
+  <p class="section-label">03 · Mes séances enregistrées</p>
+  <div id="loading">⏳ Chargement…</div>
+  <div id="mes-seances"></div>
+
+</main>
 
 <div id="toast"></div>
 
 <script>
+  // ── Auth guard
+  const token   = localStorage.getItem('prof_token');
+  const profNom = localStorage.getItem('prof_nom');
+  const profMat = localStorage.getItem('prof_matiere');
+  if (!token) window.location.href = '/login-prof.html';
+
+  document.getElementById('nav-nom').textContent     = profNom || '—';
+  document.getElementById('nav-matiere').textContent = profMat || '—';
+  document.getElementById('presence-date').textContent = new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
   document.getElementById('date').valueAsDate = new Date();
 
-  let timerInterval = null;
-  let expiryDate    = null;
-  let currentMatiere, currentDate, currentTypeSeance;
-
-  function toast(msg, type = 'ok') {
-    const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.className = `show ${type}`;
-    setTimeout(() => { t.className = ''; }, 3500);
+  function logout() {
+    localStorage.removeItem('prof_token');
+    localStorage.removeItem('prof_nom');
+    localStorage.removeItem('prof_matiere');
+    window.location.href = '/';
   }
 
+  function toast(msg, type='ok') {
+    const t=document.getElementById('toast');
+    t.textContent=msg; t.className=`show ${type}`;
+    setTimeout(()=>{t.className=''},3200);
+  }
+
+  function authHeaders() {
+    return { 'Content-Type':'application/json', 'Authorization': `Bearer ${token}` };
+  }
+
+  // ── QR de pointage professeur
+  function afficherQRPointer() {
+    const zone = document.getElementById('qr-pointer');
+    if (zone.style.display==='block') { zone.style.display='none'; return; }
+
+    // Le QR pointe vers une route qui valide avec le token JWT du prof
+    const url = `${window.location.origin}/pointer-prof.html?token=${encodeURIComponent(token)}`;
+    document.getElementById('qrcode-pointer').innerHTML='';
+    new QRCode(document.getElementById('qrcode-pointer'),{
+      text:url, width:180, height:180, colorDark:'#000', colorLight:'#fff',
+      correctLevel:QRCode.CorrectLevel.H
+    });
+    zone.style.display='block';
+  }
+
+  // ── Démarrer séance
+  let timerInterval=null, expiryDate=null, currentDate, currentType;
+
   async function demarrerSeance() {
-    const matiere    = document.getElementById('matiere').value.trim();
     const date       = document.getElementById('date').value;
     const typeSeance = document.getElementById('typeSeance').value;
-
-    if (!matiere || !date) return toast('Veuillez remplir la matière et la date.', 'err');
-
-    currentMatiere    = matiere;
-    currentDate       = date;
-    currentTypeSeance = typeSeance;
+    if (!date) return toast('Sélectionnez une date.','err');
+    currentDate=date; currentType=typeSeance;
 
     try {
-      const res  = await fetch('/demarrer-seance', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ matiere, date })
-      });
+      const res  = await fetch('/demarrer-seance',{ method:'POST', headers:authHeaders(), body:JSON.stringify({date}) });
       const data = await res.json();
-      if (!res.ok) return toast(data.error, 'err');
-
-      afficherQR(data.token, matiere, date, typeSeance, data.expiry);
-      toast('✅ Séance démarrée — QR Code actif 15 min');
-    } catch (e) {
-      toast('Erreur réseau.', 'err');
-    }
+      if (res.status===401||res.status===403) { logout(); return; }
+      if (!res.ok) return toast(data.error,'err');
+      afficherQR(data.token, data.matiere, date, typeSeance, data.expiry);
+      toast('✅ QR Code actif 15 min');
+    } catch { toast('Erreur réseau.','err'); }
   }
 
   async function renouvelerToken() {
-    if (!currentMatiere || !currentDate) return toast('Démarrez d\'abord une séance.', 'err');
-
+    if (!currentDate) return;
     try {
-      const res  = await fetch('/demarrer-seance', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ matiere: currentMatiere, date: currentDate })
-      });
+      const res  = await fetch('/demarrer-seance',{ method:'POST', headers:authHeaders(), body:JSON.stringify({date:currentDate}) });
       const data = await res.json();
-      if (!res.ok) return toast(data.error, 'err');
-
-      afficherQR(data.token, currentMatiere, currentDate, currentTypeSeance, data.expiry);
-      toast('🔄 QR Code renouvelé — encore 15 min');
-    } catch (e) {
-      toast('Erreur réseau.', 'err');
-    }
+      if (!res.ok) return toast(data.error,'err');
+      afficherQR(data.token, data.matiere, currentDate, currentType, data.expiry);
+      toast('🔄 QR renouvelé');
+    } catch { toast('Erreur réseau.','err'); }
   }
 
-  function afficherQR(token, matiere, date, typeSeance, expiry) {
-    const baseURL = window.location.origin;
-    const params  = new URLSearchParams({ token, matiere, date, typeSeance });
-    const url     = `${baseURL}/etudiant.html?${params}`;
-
-    const qrDiv = document.getElementById('qrcode');
-    qrDiv.innerHTML = '';
-    new QRCode(qrDiv, {
-      text:         url,
-      width:        220,
-      height:       220,
-      colorDark:    '#000000',
-      colorLight:   '#ffffff',
-      correctLevel: QRCode.CorrectLevel.H
-    });
-
-    document.getElementById('qr-zone').style.display = 'block';
-    expiryDate = new Date(expiry);
-    lancerTimer();
+  function afficherQR(tok, matiere, date, typeSeance, expiry) {
+    const url = `${location.origin}/etudiant.html?${new URLSearchParams({token:tok,matiere,date,typeSeance})}`;
+    const div = document.getElementById('qrcode');
+    div.innerHTML='';
+    new QRCode(div,{text:url,width:200,height:200,colorDark:'#000',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.H});
+    document.getElementById('qr-zone').style.display='block';
+    expiryDate=new Date(expiry); lancerTimer();
   }
 
   function lancerTimer() {
-    if (timerInterval) clearInterval(timerInterval);
-    const TOTAL = 15 * 60 * 1000;
-
-    timerInterval = setInterval(() => {
-      const restant  = expiryDate - Date.now();
-      const pct      = Math.max(0, (restant / TOTAL) * 100);
-      const minutes  = Math.max(0, Math.floor(restant / 60000));
-      const secondes = Math.max(0, Math.floor((restant % 60000) / 1000));
-
-      document.getElementById('timer-fill').style.width = `${pct}%`;
-
-      if (pct < 20) {
-        document.getElementById('timer-fill').style.background = 'linear-gradient(90deg,#ef4444,#f59e0b)';
-      } else if (pct < 50) {
-        document.getElementById('timer-fill').style.background = 'linear-gradient(90deg,#f59e0b,#eab308)';
-      }
-
-      document.getElementById('countdown').textContent =
-        `${String(minutes).padStart(2,'0')}:${String(secondes).padStart(2,'0')}`;
-
-      if (restant <= 0) {
-        clearInterval(timerInterval);
-        document.getElementById('countdown').textContent = 'EXPIRÉ';
-        toast('⚠ QR Code expiré. Veuillez renouveler.', 'err');
-      }
-    }, 1000);
+    if(timerInterval) clearInterval(timerInterval);
+    const TOTAL=15*60*1000;
+    timerInterval=setInterval(()=>{
+      const r=expiryDate-Date.now(), pct=Math.max(0,(r/TOTAL)*100);
+      const m=Math.max(0,Math.floor(r/60000)), s=Math.max(0,Math.floor((r%60000)/1000));
+      document.getElementById('timer-fill').style.width=`${pct}%`;
+      if(pct<20) document.getElementById('timer-fill').style.background='linear-gradient(90deg,#ef4444,#f59e0b)';
+      document.getElementById('countdown').textContent=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+      if(r<=0){ clearInterval(timerInterval); document.getElementById('countdown').textContent='EXPIRÉ'; toast('⚠ QR expiré, renouvelez.','err'); }
+    },1000);
   }
 
   async function toggleLogs() {
-    const panel = document.getElementById('logs-panel');
-    if (panel.style.display === 'block') { panel.style.display = 'none'; return; }
-    if (!currentMatiere || !currentDate) return;
-
+    const panel=document.getElementById('logs-panel');
+    if(panel.style.display==='block'){panel.style.display='none';return;}
+    if(!currentDate) return;
     try {
-      const res  = await fetch(`/securite-logs?matiere=${encodeURIComponent(currentMatiere)}&date=${encodeURIComponent(currentDate)}`);
+      const res  = await fetch(`/securite-logs?date=${currentDate}`,{headers:authHeaders()});
       const data = await res.json();
       const list = document.getElementById('logs-list');
-      list.innerHTML = '';
-
-      if (!data.tentativesBloquees || data.tentativesBloquees.length === 0) {
-        list.innerHTML = '<div style="font-family:var(--mono);font-size:0.75rem;color:var(--success);padding:0.5rem;">✅ Aucune tentative suspecte.</div>';
+      list.innerHTML='';
+      if(!data.tentativesBloquees||data.tentativesBloquees.length===0){
+        list.innerHTML='<div style="font-family:var(--mono);font-size:0.72rem;color:var(--success);padding:0.4rem;">✅ Aucune tentative suspecte.</div>';
       } else {
-        data.tentativesBloquees.slice(-15).reverse().forEach(t => {
-          const d = document.createElement('div');
-          d.className = 'log-entry';
-          d.innerHTML = `<span>${t.ip} — ${t.raison}</span><span class="log-time">${new Date(t.date).toLocaleTimeString()}</span>`;
+        data.tentativesBloquees.slice(-15).reverse().forEach(t=>{
+          const d=document.createElement('div'); d.className='log-entry';
+          d.innerHTML=`<span>${t.ip} — ${t.raison}</span><span class="log-time">${new Date(t.date).toLocaleTimeString()}</span>`;
           list.appendChild(d);
         });
       }
-      panel.style.display = 'block';
-    } catch (e) {
-      toast('Impossible de charger les logs.', 'err');
+      panel.style.display='block';
+    } catch { toast('Impossible de charger les logs.','err'); }
+  }
+
+  // ── Charger mes séances
+  async function chargerMesSeances() {
+    try {
+      const res    = await fetch('/prof/mes-seances',{headers:authHeaders()});
+      if(res.status===401||res.status===403){logout();return;}
+      const seances = await res.json();
+      document.getElementById('loading').style.display='none';
+      const cont = document.getElementById('mes-seances');
+
+      if(!seances||seances.length===0){
+        cont.innerHTML='<div style="text-align:center;font-family:var(--mono);font-size:0.78rem;color:var(--muted);padding:2rem;">Aucune séance enregistrée.</div>';
+        return;
+      }
+
+      seances.forEach(s=>{
+        const etudiants=s.etudiants||[];
+        const pS1=etudiants.filter(e=>e.s1==="Present").length;
+        const pS2=etudiants.filter(e=>e.s2==="Present").length;
+        let dateAff=s.date;
+        try{dateAff=new Date(s.date+'T00:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});}catch{}
+
+        const lignes=etudiants.map(e=>{
+          const cs1=e.s1==="Present"?'badge-ok':'badge-absent';
+          const cs2=e.s2==="Present"?'badge-ok':'badge-absent';
+          return `<tr><td>${e.nom}</td><td><span class="badge ${cs1}">${e.s1==="Present"?'✓':''} ${e.s1}</span></td><td><span class="badge ${cs2}">${e.s2==="Present"?'✓':''} ${e.s2}</span></td></tr>`;
+        }).join('');
+
+        const card=document.createElement('div'); card.className='seance-card';
+        card.innerHTML=`
+          <div class="seance-head">
+            <span class="seance-head-title">${s.matiere}</span>
+            <span class="seance-head-date">📅 ${dateAff}</span>
+          </div>
+          <div class="seance-stats">
+            <span class="stat"><strong>${etudiants.length}</strong> étudiants</span>
+            <span class="stat"><strong style="color:var(--success)">${pS1}</strong> présents S1</span>
+            <span class="stat"><strong style="color:var(--success)">${pS2}</strong> présents S2</span>
+          </div>
+          <table><thead><tr><th>Nom</th><th>Séance 1</th><th>Séance 2</th></tr></thead><tbody>${lignes}</tbody></table>`;
+        cont.appendChild(card);
+      });
+    } catch(e) {
+      document.getElementById('loading').textContent='❌ Erreur de chargement.';
     }
   }
+
+  chargerMesSeances();
 </script>
 </body>
 </html>

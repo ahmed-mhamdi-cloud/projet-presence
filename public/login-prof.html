@@ -1,1 +1,208 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Connexion Professeur — EPT</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap');
+  :root {
+    --bg: #07090f; --surface: #0f1623; --border: #1a2540;
+    --accent: #00d4ff; --success: #10b981; --danger: #ef4444;
+    --text: #e2e8f0; --muted: #64748b;
+    --mono: 'Space Mono', monospace; --sans: 'Syne', sans-serif;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: var(--bg); color: var(--text); font-family: var(--sans);
+    min-height: 100vh; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; padding: 1.5rem;
+    background-image: radial-gradient(ellipse at 30% 20%, rgba(0,212,255,0.06) 0%, transparent 60%);
+  }
+  .back {
+    position: fixed; top: 1.5rem; left: 1.5rem;
+    font-family: var(--mono); font-size: 0.7rem; color: var(--muted);
+    text-decoration: none; letter-spacing: 0.05em;
+    transition: color 0.2s;
+  }
+  .back:hover { color: var(--accent); }
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px; padding: 2rem; width: 100%; max-width: 420px;
+    animation: up 0.4s ease;
+  }
+  @keyframes up { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+  .card-title {
+    font-size: 1.4rem; font-weight: 800; margin-bottom: 0.25rem;
+    background: linear-gradient(135deg, var(--accent), #0090b3);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .card-sub { font-family: var(--mono); font-size: 0.7rem; color: var(--muted); margin-bottom: 1.75rem; }
 
+  /* Onglets */
+  .tabs { display: flex; gap: 0; margin-bottom: 1.75rem; border-radius: 10px; overflow: hidden; background: var(--bg); border: 1px solid var(--border); }
+  .tab {
+    flex: 1; padding: 0.65rem; font-family: var(--mono); font-size: 0.72rem;
+    cursor: pointer; text-align: center; border: none; background: transparent;
+    color: var(--muted); transition: all 0.2s; letter-spacing: 0.05em;
+  }
+  .tab.active { background: var(--accent); color: #000; font-weight: 700; }
+
+  /* Formulaire */
+  .form-group { margin-bottom: 1rem; }
+  label { display: block; font-family: var(--mono); font-size: 0.65rem; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.4rem; }
+  input, select {
+    width: 100%; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 9px; color: var(--text); font-family: var(--mono);
+    font-size: 0.85rem; padding: 0.7rem 0.9rem; outline: none; transition: border-color 0.2s;
+  }
+  input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,212,255,0.08); }
+  .hint { font-family: var(--mono); font-size: 0.62rem; color: var(--muted); margin-top: 0.3rem; }
+
+  .btn {
+    width: 100%; padding: 0.85rem; border-radius: 10px; font-family: var(--sans);
+    font-weight: 700; font-size: 0.9rem; cursor: pointer; border: none;
+    background: linear-gradient(135deg, var(--accent), #0090b3); color: #000;
+    transition: all 0.2s; margin-top: 0.5rem;
+  }
+  .btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,212,255,0.25); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  .msg {
+    display: none; margin-top: 1rem; padding: 0.85rem; border-radius: 10px;
+    font-family: var(--mono); font-size: 0.78rem; line-height: 1.5;
+  }
+  .msg.ok  { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.25); color: var(--success); }
+  .msg.err { background: rgba(239,68,68,0.1);  border: 1px solid rgba(239,68,68,0.25);  color: var(--danger); }
+
+  .pane { display: none; }
+  .pane.active { display: block; }
+</style>
+</head>
+<body>
+
+<a href="/" class="back">← Retour</a>
+
+<div class="card">
+  <div class="card-title">👨‍🏫 Espace Professeur</div>
+  <p class="card-sub">CONNEXION · INSCRIPTION · @ept.ucar.tn</p>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('login')">Se connecter</button>
+    <button class="tab"        onclick="switchTab('register')">Créer un compte</button>
+  </div>
+
+  <!-- CONNEXION -->
+  <div class="pane active" id="pane-login">
+    <div class="form-group">
+      <label>Email</label>
+      <input type="email" id="l-email" placeholder="prenom.nom@ept.ucar.tn" />
+    </div>
+    <div class="form-group">
+      <label>Mot de passe</label>
+      <input type="password" id="l-pass" placeholder="••••••••" />
+    </div>
+    <button class="btn" id="btn-login" onclick="login()">Connexion →</button>
+    <div class="msg" id="msg-login"></div>
+  </div>
+
+  <!-- INSCRIPTION -->
+  <div class="pane" id="pane-register">
+    <div class="form-group">
+      <label>Nom complet</label>
+      <input type="text" id="r-nom" placeholder="ex: Ahmed Ben Salah" />
+    </div>
+    <div class="form-group">
+      <label>Email institutionnel</label>
+      <input type="email" id="r-email" placeholder="prenom.nom@ept.ucar.tn" />
+      <p class="hint">Seuls les emails @ept.ucar.tn sont acceptés</p>
+    </div>
+    <div class="form-group">
+      <label>Matière enseignée</label>
+      <input type="text" id="r-matiere" placeholder="ex: Mathématiques, Physique..." />
+    </div>
+    <div class="form-group">
+      <label>Mot de passe</label>
+      <input type="password" id="r-pass" placeholder="Minimum 8 caractères" />
+    </div>
+    <button class="btn" id="btn-register" onclick="register()">Créer mon compte →</button>
+    <div class="msg" id="msg-register"></div>
+  </div>
+</div>
+
+<script>
+  function switchTab(t) {
+    document.querySelectorAll('.tab').forEach((el,i) => el.classList.toggle('active', (i===0&&t==='login')||(i===1&&t==='register')));
+    document.getElementById('pane-login').classList.toggle('active', t==='login');
+    document.getElementById('pane-register').classList.toggle('active', t==='register');
+  }
+
+  function showMsg(id, msg, type) {
+    const el = document.getElementById(id);
+    el.textContent = msg;
+    el.className = `msg ${type}`;
+    el.style.display = 'block';
+  }
+
+  async function login() {
+    const email = document.getElementById('l-email').value.trim();
+    const password = document.getElementById('l-pass').value;
+    if (!email || !password) return showMsg('msg-login', 'Remplissez tous les champs.', 'err');
+
+    const btn = document.getElementById('btn-login');
+    btn.disabled = true; btn.textContent = '⏳ Connexion…';
+
+    try {
+      const res  = await fetch('/auth/login-prof', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        btn.disabled = false; btn.textContent = 'Connexion →';
+        return showMsg('msg-login', data.error, 'err');
+      }
+      // Sauvegarder le token
+      localStorage.setItem('prof_token', data.token);
+      localStorage.setItem('prof_nom',   data.nom);
+      localStorage.setItem('prof_matiere', data.matiere);
+      showMsg('msg-login', `✅ Bienvenue ${data.nom} ! Redirection…`, 'ok');
+      setTimeout(() => window.location.href = '/professeur.html', 1200);
+    } catch {
+      btn.disabled = false; btn.textContent = 'Connexion →';
+      showMsg('msg-login', 'Erreur réseau.', 'err');
+    }
+  }
+
+  async function register() {
+    const nom     = document.getElementById('r-nom').value.trim();
+    const email   = document.getElementById('r-email').value.trim();
+    const matiere = document.getElementById('r-matiere').value.trim();
+    const password = document.getElementById('r-pass').value;
+    if (!nom||!email||!matiere||!password) return showMsg('msg-register','Remplissez tous les champs.','err');
+    if (password.length < 8) return showMsg('msg-register','Mot de passe trop court (min 8 caractères).','err');
+
+    const btn = document.getElementById('btn-register');
+    btn.disabled = true; btn.textContent = '⏳ Création…';
+
+    try {
+      const res  = await fetch('/auth/register', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ nom, email, password, matiere })
+      });
+      const data = await res.json();
+      btn.disabled = false; btn.textContent = 'Créer mon compte →';
+      if (!res.ok) return showMsg('msg-register', data.error, 'err');
+      showMsg('msg-register', '✅ Compte créé ! Connectez-vous maintenant.', 'ok');
+      setTimeout(() => switchTab('login'), 2000);
+    } catch {
+      btn.disabled = false; btn.textContent = 'Créer mon compte →';
+      showMsg('msg-register', 'Erreur réseau.', 'err');
+    }
+  }
+
+  // Si déjà connecté, rediriger
+  if (localStorage.getItem('prof_token')) window.location.href = '/professeur.html';
+</script>
+</body>
+</html>

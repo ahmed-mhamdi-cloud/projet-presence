@@ -1,1 +1,134 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Connexion Admin — EPT</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap');
+  :root {
+    --bg: #07090f; --surface: #0f1623; --border: #1a2540;
+    --purple: #7c3aed; --success: #10b981; --danger: #ef4444;
+    --text: #e2e8f0; --muted: #64748b;
+    --mono: 'Space Mono', monospace; --sans: 'Syne', sans-serif;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: var(--bg); color: var(--text); font-family: var(--sans);
+    min-height: 100vh; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; padding: 1.5rem;
+    background-image: radial-gradient(ellipse at 70% 20%, rgba(124,58,237,0.08) 0%, transparent 60%);
+  }
+  .back {
+    position: fixed; top: 1.5rem; left: 1.5rem;
+    font-family: var(--mono); font-size: 0.7rem; color: var(--muted);
+    text-decoration: none; letter-spacing: 0.05em; transition: color 0.2s;
+  }
+  .back:hover { color: #a78bfa; }
+  .card {
+    background: var(--surface); border: 1px solid rgba(124,58,237,0.25);
+    border-radius: 20px; padding: 2.25rem; width: 100%; max-width: 380px;
+    animation: up 0.4s ease;
+  }
+  @keyframes up { from{opacity:0;transform:translateY(20px)} to{opacity:1} }
 
+  .icon { font-size: 2.5rem; margin-bottom: 0.75rem; display: block; text-align: center; }
+  .card-title {
+    font-size: 1.4rem; font-weight: 800; text-align: center; margin-bottom: 0.25rem;
+    background: linear-gradient(135deg, #a78bfa, var(--purple));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .card-sub { font-family: var(--mono); font-size: 0.68rem; color: var(--muted); text-align: center; margin-bottom: 2rem; letter-spacing: 0.08em; }
+
+  .form-group { margin-bottom: 1rem; }
+  label { display: block; font-family: var(--mono); font-size: 0.65rem; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.4rem; }
+  input {
+    width: 100%; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 9px; color: var(--text); font-family: var(--mono);
+    font-size: 0.85rem; padding: 0.7rem 0.9rem; outline: none; transition: border-color 0.2s;
+  }
+  input:focus { border-color: var(--purple); box-shadow: 0 0 0 3px rgba(124,58,237,0.1); }
+
+  .btn {
+    width: 100%; padding: 0.85rem; border-radius: 10px; font-family: var(--sans);
+    font-weight: 700; font-size: 0.9rem; cursor: pointer; border: none;
+    background: linear-gradient(135deg, #7c3aed, #5b21b6); color: #fff;
+    transition: all 0.2s; margin-top: 0.5rem;
+  }
+  .btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(124,58,237,0.3); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  .msg { display: none; margin-top: 1rem; padding: 0.85rem; border-radius: 10px; font-family: var(--mono); font-size: 0.78rem; }
+  .msg.ok  { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.25); color: var(--success); }
+  .msg.err { background: rgba(239,68,68,0.1);  border: 1px solid rgba(239,68,68,0.25);  color: var(--danger); }
+
+  .warning {
+    background: rgba(124,58,237,0.06); border: 1px solid rgba(124,58,237,0.2);
+    border-radius: 10px; padding: 0.75rem 1rem; margin-bottom: 1.5rem;
+    font-family: var(--mono); font-size: 0.68rem; color: #a78bfa; text-align: center; line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+
+<a href="/" class="back">← Retour</a>
+
+<div class="card">
+  <span class="icon">🛡️</span>
+  <div class="card-title">Espace Administrateur</div>
+  <p class="card-sub">ACCÈS RESTREINT · AUTORISÉ UNIQUEMENT</p>
+
+  <div class="warning">
+    Cet espace est réservé à l'administration.<br>
+    Accès total aux présences profs & étudiants.
+  </div>
+
+  <div class="form-group">
+    <label>Email Admin</label>
+    <input type="email" id="a-email" placeholder="admin@ept.ucar.tn" />
+  </div>
+  <div class="form-group">
+    <label>Mot de passe</label>
+    <input type="password" id="a-pass" placeholder="••••••••" />
+  </div>
+  <button class="btn" id="btn-admin" onclick="loginAdmin()">Accéder au tableau de bord →</button>
+  <div class="msg" id="msg-admin"></div>
+</div>
+
+<script>
+  function showMsg(msg, type) {
+    const el = document.getElementById('msg-admin');
+    el.textContent = msg; el.className = `msg ${type}`; el.style.display = 'block';
+  }
+
+  async function loginAdmin() {
+    const email    = document.getElementById('a-email').value.trim();
+    const password = document.getElementById('a-pass').value;
+    if (!email || !password) return showMsg('Remplissez tous les champs.', 'err');
+
+    const btn = document.getElementById('btn-admin');
+    btn.disabled = true; btn.textContent = '⏳ Vérification…';
+
+    try {
+      const res  = await fetch('/auth/login-admin', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        btn.disabled = false; btn.textContent = 'Accéder au tableau de bord →';
+        return showMsg(data.error, 'err');
+      }
+      localStorage.setItem('admin_token', data.token);
+      showMsg('✅ Accès autorisé. Redirection…', 'ok');
+      setTimeout(() => window.location.href = '/admin.html', 1000);
+    } catch {
+      btn.disabled = false; btn.textContent = 'Accéder au tableau de bord →';
+      showMsg('Erreur réseau.', 'err');
+    }
+  }
+
+  if (localStorage.getItem('admin_token')) window.location.href = '/admin.html';
+</script>
+</body>
+</html>
