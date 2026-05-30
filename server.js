@@ -542,6 +542,17 @@ app.get('/prof/mes-seances', authProf, async (req, res) => {
 });
 
 // ─────────────────────────────────────────────
+//  ROUTE 9B : VÉRIFIER MA PRÉSENCE DU JOUR
+// ─────────────────────────────────────────────
+app.get('/prof/ma-presence', authProf, async (req, res) => {
+  try {
+    const date = new Date().toISOString().split('T')[0];
+    const presence = await PresenceProf.findOne({ profId: req.prof.id, date });
+    res.json({ presente: !!presence, heure: presence?.heure || null });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ─────────────────────────────────────────────
 //  ROUTE 9 : LOGS SÉCURITÉ
 // ─────────────────────────────────────────────
 app.get('/securite-logs', authProf, async (req, res) => {
