@@ -1,13 +1,13 @@
 require('dotenv').config();
 
-const express    = require('express');
-const mongoose   = require('mongoose');
-const cors       = require('cors');
-const crypto     = require('crypto');
-const bcrypt     = require('bcryptjs');
-const jwt        = require('jsonwebtoken');
-const rateLimit  = require('express-rate-limit');
-const nodemailer = require('nodemailer');
+const express   = require('express');
+const mongoose  = require('mongoose');
+const cors      = require('cors');
+const crypto    = require('crypto');
+const bcrypt    = require('bcryptjs');
+const jwt       = require('jsonwebtoken');
+const rateLimit = require('express-rate-limit');
+const { Resend } = require('resend');
 
 const app = express();
 app.set('trust proxy', 1);
@@ -22,29 +22,12 @@ const MONGO_URI      = process.env.MONGO_URI;
 const JWT_SECRET     = process.env.JWT_SECRET;
 const ADMIN_EMAIL    = process.env.ADMIN_EMAIL;
 const ADMIN_PASS     = process.env.ADMIN_PASS;
-const GMAIL_USER     = process.env.GMAIL_USER;      // ex: presence.ept@gmail.com
-const GMAIL_PASS     = process.env.GMAIL_PASS;      // Mot de passe d'application Gmail
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const ALLOWED_DOMAIN = "ept.ucar.tn";
 
-// ─────────────────────────────────────────────
-//  CONFIGURATION NODEMAILER (Gmail SMTP)
-// ─────────────────────────────────────────────
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: GMAIL_USER,
-    pass: GMAIL_PASS
-  }
-});
-
-// Vérifier la connexion Gmail au démarrage
-transporter.verify((error) => {
-  if (error) {
-    console.error('❌ Erreur connexion Gmail:', error.message);
-  } else {
-    console.log('✅ Gmail SMTP connecté — prêt à envoyer des emails');
-  }
-});
+// Client Resend
+const resend = new Resend(RESEND_API_KEY);
+console.log('✅ Resend initialisé — prêt à envoyer des emails');
 
 // ─────────────────────────────────────────────
 //  CONNEXION MONGODB
@@ -56,7 +39,6 @@ mongoose.connect(MONGO_URI)
 // ─────────────────────────────────────────────
 //  SCHEMAS
 // ─────────────────────────────────────────────
-
 const ProfSchema = new mongoose.Schema({
   nom:       { type: String, required: true },
   email:     { type: String, required: true, unique: true, lowercase: true },
@@ -85,33 +67,27 @@ const SeanceSchema = new mongoose.Schema({
   professorIP: String,
   token:       String,
   tokenExpiry: Date,
-  // etudiants : { nom, email, s1, s2 }
-  etudiants:   Array,
+  etudiants:   Array,  // { nom, email, s1, s2 }
   ipUtilisees: { s1: [String], s2: [String] },
   tentativesBloquees: [{
     ip:    String,
     raison: String,
     date:  { type: Date, default: Date.now }
   }],
-  // Historique des notifications email envoyées
   emailsEnvoyes: [{
     typeSeance:  String,
     envoyeA:     Date,
     nbEnvoyes:   Number,
     nbEchecs:    Number,
     nbSansEmail: Number,
-    details:     Array  // [{ nom, email, statut, erreur }]
+    details:     Array
   }]
 });
 const Seance = mongoose.model('Seance', SeanceSchema);
 
-// Étudiant officiel — AVEC email
 const EtudiantOfficiel = mongoose.model(
   'Etudiant',
-  new mongoose.Schema({
-    nom:   String,
-    email: String   // ex: ahmed.mhamdi@ept.ucar.tn
-  }),
+  new mongoose.Schema({ nom: String, email: String }),
   'etudiants'
 );
 
@@ -196,196 +172,112 @@ function formatDateFR(dateStr) {
 }
 
 // ─────────────────────────────────────────────
-//  TEMPLATE EMAIL HTML PROFESSIONNEL
+//  TEMPLATE EMAIL HTML
 // ─────────────────────────────────────────────
 function creerEmailHTML(etudiant, matiere, dateStr, typeSeance, profNom) {
-  const dateFormatee = formatDateFR(dateStr);
-  const heureEnvoi   = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-  const annee        = new Date().getFullYear();
-  const numSeance    = typeSeance === "Seance 1" ? "1" : "2";
-  const couleurSeance = typeSeance === "Seance 1" ? "#00d4ff" : "#7c3aed";
+  const dateFormatee  = formatDateFR(dateStr);
+  const heureEnvoi    = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  const annee         = new Date().getFullYear();
+  const numSeance     = typeSeance === "Seance 1" ? "1" : "2";
+  const couleur       = typeSeance === "Seance 1" ? "#00d4ff" : "#7c3aed";
 
-  return `
-<!DOCTYPE html>
+  return `<!DOCTYPE html>
 <html lang="fr">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Notification d'absence — EPT</title>
-</head>
-<body style="margin:0;padding:0;background-color:#f1f5f9;font-family:'Segoe UI',Arial,sans-serif;">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:'Segoe UI',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:40px 20px;">
+  <tr><td align="center">
+    <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
 
-  <!-- WRAPPER -->
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:40px 20px;">
-    <tr>
-      <td align="center">
-        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+      <!-- HEADER -->
+      <tr><td style="background:#07090f;border-radius:16px 16px 0 0;padding:40px;text-align:center;">
+        <div style="font-size:48px;margin-bottom:16px;">⚠️</div>
+        <h1 style="margin:0;color:#fff;font-size:24px;font-weight:800;">Absence Enregistrée</h1>
+        <p style="margin:8px 0 0;color:#64748b;font-size:12px;letter-spacing:2px;text-transform:uppercase;">École Polytechnique de Tunisie</p>
+      </td></tr>
 
-          <!-- HEADER -->
-          <tr>
-            <td style="background:linear-gradient(135deg,#07090f 0%,#0f1623 100%);border-radius:16px 16px 0 0;padding:40px 40px 30px;text-align:center;">
-              <div style="display:inline-block;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);border-radius:50%;width:72px;height:72px;line-height:72px;font-size:32px;margin-bottom:20px;">⚠️</div>
-              <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:800;letter-spacing:-0.5px;">Absence Enregistrée</h1>
-              <p style="margin:8px 0 0;color:#64748b;font-size:13px;font-family:'Courier New',monospace;letter-spacing:1px;text-transform:uppercase;">École Polytechnique de Tunisie</p>
-            </td>
-          </tr>
+      <!-- BADGE SÉANCE -->
+      <tr><td style="background:#0f1623;padding:16px;text-align:center;border-bottom:1px solid #1a2540;">
+        <span style="background:${couleur}20;border:1px solid ${couleur}50;color:${couleur};font-size:12px;font-weight:700;padding:6px 20px;border-radius:99px;letter-spacing:2px;">
+          SÉANCE ${numSeance}
+        </span>
+      </td></tr>
 
-          <!-- BADGE SÉANCE -->
-          <tr>
-            <td style="background:#0f1623;padding:0 40px;">
-              <div style="text-align:center;padding:16px 0;border-bottom:1px solid #1a2540;">
-                <span style="display:inline-block;background:${couleurSeance}20;border:1px solid ${couleurSeance}50;color:${couleurSeance};font-family:'Courier New',monospace;font-size:12px;font-weight:700;padding:6px 20px;border-radius:99px;letter-spacing:2px;text-transform:uppercase;">
-                  SÉANCE ${numSeance}
+      <!-- BONJOUR -->
+      <tr><td style="background:#0f1623;padding:32px 40px 24px;">
+        <p style="margin:0 0 4px;color:#94a3b8;font-size:13px;text-transform:uppercase;letter-spacing:1px;">Bonjour,</p>
+        <h2 style="margin:0 0 16px;color:#e2e8f0;font-size:20px;font-weight:800;">${etudiant.nom}</h2>
+        <p style="margin:0;color:#94a3b8;font-size:15px;line-height:1.7;">
+          Votre absence a été enregistrée automatiquement. Si vous étiez présent(e), contactez votre professeur immédiatement.
+        </p>
+      </td></tr>
+
+      <!-- DÉTAILS -->
+      <tr><td style="background:#0f1623;padding:0 40px 32px;">
+        <div style="background:#07090f;border:1px solid #1a2540;border-radius:12px;overflow:hidden;">
+
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr style="border-bottom:1px solid #1a2540;">
+              <td style="padding:14px 20px;color:#64748b;font-size:12px;text-transform:uppercase;letter-spacing:1px;width:40%;">📚 Matière</td>
+              <td style="padding:14px 20px;color:#e2e8f0;font-size:14px;font-weight:700;">${matiere}</td>
+            </tr>
+            <tr style="border-bottom:1px solid #1a2540;">
+              <td style="padding:14px 20px;color:#64748b;font-size:12px;text-transform:uppercase;letter-spacing:1px;">📅 Date</td>
+              <td style="padding:14px 20px;color:#e2e8f0;font-size:14px;font-weight:600;">${dateFormatee}</td>
+            </tr>
+            <tr style="border-bottom:1px solid #1a2540;">
+              <td style="padding:14px 20px;color:#64748b;font-size:12px;text-transform:uppercase;letter-spacing:1px;">⏰ Séance</td>
+              <td style="padding:14px 20px;">
+                <span style="background:${couleur}20;color:${couleur};font-size:12px;font-weight:700;padding:3px 12px;border-radius:99px;border:1px solid ${couleur}40;">
+                  Séance ${numSeance}
                 </span>
-              </div>
-            </td>
-          </tr>
+              </td>
+            </tr>
+            <tr style="border-bottom:1px solid #1a2540;">
+              <td style="padding:14px 20px;color:#64748b;font-size:12px;text-transform:uppercase;letter-spacing:1px;">👨‍🏫 Professeur</td>
+              <td style="padding:14px 20px;color:#e2e8f0;font-size:14px;font-weight:600;">${profNom}</td>
+            </tr>
+            <tr>
+              <td style="padding:14px 20px;color:#64748b;font-size:12px;text-transform:uppercase;letter-spacing:1px;">🕐 Notifié à</td>
+              <td style="padding:14px 20px;color:#e2e8f0;font-size:14px;">${heureEnvoi}</td>
+            </tr>
+          </table>
 
-          <!-- MESSAGE PRINCIPAL -->
-          <tr>
-            <td style="background:#0f1623;padding:32px 40px 24px;">
-              <p style="margin:0 0 8px;color:#94a3b8;font-size:13px;font-family:'Courier New',monospace;letter-spacing:1px;text-transform:uppercase;">Bonjour,</p>
-              <h2 style="margin:0 0 20px;color:#e2e8f0;font-size:20px;font-weight:800;">${etudiant.nom}</h2>
-              <p style="margin:0;color:#94a3b8;font-size:15px;line-height:1.7;">
-                Votre absence a été enregistrée automatiquement lors de la séance suivante.
-                Si vous étiez présent(e), veuillez contacter votre professeur dans les plus brefs délais.
-              </p>
-            </td>
-          </tr>
+        </div>
+      </td></tr>
 
-          <!-- DÉTAILS DE LA SÉANCE -->
-          <tr>
-            <td style="background:#0f1623;padding:0 40px 32px;">
-              <div style="background:#07090f;border:1px solid #1a2540;border-radius:12px;overflow:hidden;">
+      <!-- STATUT -->
+      <tr><td style="background:#0f1623;padding:0 40px 32px;">
+        <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:12px;padding:20px;text-align:center;">
+          <div style="font-size:28px;margin-bottom:8px;">🔴</div>
+          <div style="color:#ef4444;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;">STATUT : ABSENT(E)</div>
+          <div style="color:#64748b;font-size:12px;margin-top:6px;">pour la Séance ${numSeance} du ${dateFormatee}</div>
+        </div>
+      </td></tr>
 
-                <div style="padding:14px 20px;border-bottom:1px solid #1a2540;display:flex;">
-                  <table width="100%" cellpadding="0" cellspacing="0">
-                    <tr>
-                      <td style="color:#64748b;font-size:12px;font-family:'Courier New',monospace;text-transform:uppercase;letter-spacing:1px;width:40%;">📚 Matière</td>
-                      <td style="color:#e2e8f0;font-size:14px;font-weight:700;">${matiere}</td>
-                    </tr>
-                  </table>
-                </div>
+      <!-- QUE FAIRE -->
+      <tr><td style="background:#0f1623;padding:0 40px 32px;">
+        <div style="background:rgba(0,212,255,0.05);border:1px solid rgba(0,212,255,0.15);border-radius:12px;padding:20px;">
+          <p style="margin:0 0 10px;color:#00d4ff;font-size:11px;letter-spacing:1px;text-transform:uppercase;">ℹ️ Que faire ?</p>
+          <ul style="margin:0;padding-left:18px;color:#94a3b8;font-size:13px;line-height:2;">
+            <li>Si vous étiez présent(e), contactez <strong style="color:#e2e8f0;">${profNom}</strong> immédiatement</li>
+            <li>Si votre absence est justifiée, fournissez un justificatif officiel</li>
+            <li>Toute absence non justifiée sera comptabilisée dans votre dossier</li>
+          </ul>
+        </div>
+      </td></tr>
 
-                <div style="padding:14px 20px;border-bottom:1px solid #1a2540;">
-                  <table width="100%" cellpadding="0" cellspacing="0">
-                    <tr>
-                      <td style="color:#64748b;font-size:12px;font-family:'Courier New',monospace;text-transform:uppercase;letter-spacing:1px;width:40%;">📅 Date</td>
-                      <td style="color:#e2e8f0;font-size:14px;font-weight:600;">${dateFormatee}</td>
-                    </tr>
-                  </table>
-                </div>
+      <!-- FOOTER -->
+      <tr><td style="background:#07090f;border-radius:0 0 16px 16px;padding:24px 40px;text-align:center;border-top:1px solid #1a2540;">
+        <p style="margin:0 0 4px;color:#334155;font-size:12px;letter-spacing:1px;">SYSTÈME DE PRÉSENCE AUTOMATIQUE — EPT</p>
+        <p style="margin:0;color:#1e2d45;font-size:11px;">© ${annee} École Polytechnique de Tunisie · Message généré automatiquement</p>
+      </td></tr>
 
-                <div style="padding:14px 20px;border-bottom:1px solid #1a2540;">
-                  <table width="100%" cellpadding="0" cellspacing="0">
-                    <tr>
-                      <td style="color:#64748b;font-size:12px;font-family:'Courier New',monospace;text-transform:uppercase;letter-spacing:1px;width:40%;">⏰ Séance</td>
-                      <td>
-                        <span style="display:inline-block;background:${couleurSeance}20;color:${couleurSeance};font-family:'Courier New',monospace;font-size:12px;font-weight:700;padding:3px 12px;border-radius:99px;border:1px solid ${couleurSeance}40;">
-                          Séance ${numSeance}
-                        </span>
-                      </td>
-                    </tr>
-                  </table>
-                </div>
-
-                <div style="padding:14px 20px;border-bottom:1px solid #1a2540;">
-                  <table width="100%" cellpadding="0" cellspacing="0">
-                    <tr>
-                      <td style="color:#64748b;font-size:12px;font-family:'Courier New',monospace;text-transform:uppercase;letter-spacing:1px;width:40%;">👨‍🏫 Professeur</td>
-                      <td style="color:#e2e8f0;font-size:14px;font-weight:600;">${profNom}</td>
-                    </tr>
-                  </table>
-                </div>
-
-                <div style="padding:14px 20px;">
-                  <table width="100%" cellpadding="0" cellspacing="0">
-                    <tr>
-                      <td style="color:#64748b;font-size:12px;font-family:'Courier New',monospace;text-transform:uppercase;letter-spacing:1px;width:40%;">🕐 Notifié à</td>
-                      <td style="color:#e2e8f0;font-size:14px;">${heureEnvoi}</td>
-                    </tr>
-                  </table>
-                </div>
-
-              </div>
-            </td>
-          </tr>
-
-          <!-- STATUT ABSENCE -->
-          <tr>
-            <td style="background:#0f1623;padding:0 40px 32px;">
-              <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:12px;padding:20px;text-align:center;">
-                <div style="font-size:28px;margin-bottom:8px;">🔴</div>
-                <div style="color:#ef4444;font-family:'Courier New',monospace;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;">STATUT : ABSENT(E)</div>
-                <div style="color:#64748b;font-size:12px;margin-top:6px;">pour la ${typeSeance} du ${dateFormatee}</div>
-              </div>
-            </td>
-          </tr>
-
-          <!-- MESSAGE ACTION -->
-          <tr>
-            <td style="background:#0f1623;padding:0 40px 32px;">
-              <div style="background:rgba(0,212,255,0.05);border:1px solid rgba(0,212,255,0.15);border-radius:12px;padding:20px;">
-                <p style="margin:0 0 10px;color:#00d4ff;font-family:'Courier New',monospace;font-size:11px;letter-spacing:1px;text-transform:uppercase;">ℹ️ Que faire ?</p>
-                <ul style="margin:0;padding-left:18px;color:#94a3b8;font-size:13px;line-height:2;">
-                  <li>Si vous étiez présent(e), contactez <strong style="color:#e2e8f0;">${profNom}</strong> immédiatement</li>
-                  <li>Si votre absence est justifiée, fournissez un justificatif officiel</li>
-                  <li>Toute absence non justifiée sera comptabilisée dans votre dossier</li>
-                </ul>
-              </div>
-            </td>
-          </tr>
-
-          <!-- FOOTER -->
-          <tr>
-            <td style="background:#07090f;border-radius:0 0 16px 16px;padding:24px 40px;text-align:center;border-top:1px solid #1a2540;">
-              <p style="margin:0 0 6px;color:#334155;font-size:12px;font-family:'Courier New',monospace;letter-spacing:1px;">
-                SYSTÈME DE PRÉSENCE AUTOMATIQUE — EPT
-              </p>
-              <p style="margin:0;color:#1e2d45;font-size:11px;">
-                © ${annee} École Polytechnique de Tunisie · Ce message est généré automatiquement
-              </p>
-            </td>
-          </tr>
-
-        </table>
-      </td>
-    </tr>
-  </table>
-
+    </table>
+  </td></tr>
+</table>
 </body>
 </html>`;
-}
-
-// ─────────────────────────────────────────────
-//  TEMPLATE EMAIL TEXTE BRUT (fallback)
-// ─────────────────────────────────────────────
-function creerEmailTexte(etudiant, matiere, dateStr, typeSeance, profNom) {
-  const dateFormatee = formatDateFR(dateStr);
-  const heureEnvoi   = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-  return `
-EPT — Système de Présence Automatique
-======================================
-
-Bonjour ${etudiant.nom},
-
-Votre absence a été enregistrée pour :
-
-  Matière   : ${matiere}
-  Date      : ${dateFormatee}
-  Séance    : ${typeSeance}
-  Professeur: ${profNom}
-  Notifié à : ${heureEnvoi}
-
-STATUT : ABSENT(E)
-
-Si vous étiez présent(e), contactez votre professeur immédiatement.
-Si votre absence est justifiée, fournissez un justificatif officiel.
-
---------------------------------------
-École Polytechnique de Tunisie
-Ce message est généré automatiquement.
-  `.trim();
 }
 
 // ─────────────────────────────────────────────
@@ -408,9 +300,7 @@ app.post('/auth/register', authLimiter, async (req, res) => {
     const hash = await bcrypt.hash(password, 12);
     await new Prof({ nom, email: email.toLowerCase(), password: hash, matiere }).save();
     res.status(201).json({ message: "Compte créé avec succès. Vous pouvez vous connecter." });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // ─────────────────────────────────────────────
@@ -433,9 +323,7 @@ app.post('/auth/login-prof', authLimiter, async (req, res) => {
       JWT_SECRET, { expiresIn: '8h' }
     );
     res.json({ token, nom: prof.nom, email: prof.email, matiere: prof.matiere });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // ─────────────────────────────────────────────
@@ -449,9 +337,7 @@ app.post('/auth/login-admin', authLimiter, async (req, res) => {
 
     const token = jwt.sign({ role: 'admin' }, JWT_SECRET, { expiresIn: '8h' });
     res.json({ token });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // ─────────────────────────────────────────────
@@ -474,9 +360,7 @@ app.post('/prof/pointer-presence', authProf, async (req, res) => {
     }).save();
 
     res.json({ message: `✅ Présence pointée à ${heure}` });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // ─────────────────────────────────────────────
@@ -498,20 +382,14 @@ app.post('/demarrer-seance', authProf, async (req, res) => {
         return res.status(400).json({ error: "Aucun étudiant dans la base." });
 
       const etudiants = inscrits.map(e => ({
-        nom:   e.nom,
-        email: e.email || null,
-        s1:    "Absent",
-        s2:    "Absent"
+        nom: e.nom, email: e.email || null, s1: "Absent", s2: "Absent"
       }));
 
       seance = new Seance({
-        matiere, date,
-        profId: req.prof.id, profNom: req.prof.nom,
+        matiere, date, profId: req.prof.id, profNom: req.prof.nom,
         professorIP, token, tokenExpiry: expiry,
-        etudiants,
-        ipUtilisees: { s1: [], s2: [] },
-        tentativesBloquees: [],
-        emailsEnvoyes: []
+        etudiants, ipUtilisees: { s1: [], s2: [] },
+        tentativesBloquees: [], emailsEnvoyes: []
       });
     } else {
       seance.professorIP = professorIP;
@@ -521,9 +399,7 @@ app.post('/demarrer-seance', authProf, async (req, res) => {
 
     await seance.save();
     res.json({ message: "Séance prête.", token, expiry: expiry.toISOString(), matiere });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // ─────────────────────────────────────────────
@@ -537,8 +413,7 @@ app.post('/valider-presence', presenceLimiter, async (req, res) => {
 
     const studentIP = getClientIP(req);
     const seance    = await Seance.findOne({ date, matiere });
-    if (!seance)
-      return res.status(400).json({ error: "Séance introuvable." });
+    if (!seance) return res.status(400).json({ error: "Séance introuvable." });
 
     const ipField = typeSeance === "Seance 1" ? 's1' : 's2';
 
@@ -578,96 +453,74 @@ app.post('/valider-presence', presenceLimiter, async (req, res) => {
     await seance.save();
 
     res.json({ message: `✅ Présence enregistrée pour ${typeSeance} !` });
-  } catch (err) {
-    res.status(500).json({ error: "Erreur serveur." });
-  }
+  } catch (err) { res.status(500).json({ error: "Erreur serveur." }); }
 });
 
 // ─────────────────────────────────────────────
 //  ROUTE 7 : ENVOYER EMAILS AUX ABSENTS ★
-//  POST /prof/notifier-absents
-//  Body : { date, typeSeance }
 // ─────────────────────────────────────────────
 app.post('/prof/notifier-absents', authProf, emailLimiter, async (req, res) => {
   try {
     const { date, typeSeance } = req.body;
-    const matiere  = req.prof.matiere;
-    const profNom  = req.prof.nom;
+    const matiere = req.prof.matiere;
+    const profNom = req.prof.nom;
 
     if (!date || !typeSeance)
       return res.status(400).json({ error: "Date et type de séance requis." });
 
     const seance = await Seance.findOne({ matiere, date });
-    if (!seance)
-      return res.status(404).json({ error: "Séance introuvable." });
+    if (!seance) return res.status(404).json({ error: "Séance introuvable." });
 
     const champ = typeSeance === "Seance 1" ? 's1' : 's2';
-
-    // Séparer absents avec email / sans email
-    const absentsAvecEmail  = seance.etudiants.filter(e => e[champ] === "Absent" && e.email);
-    const absentsSansEmail  = seance.etudiants.filter(e => e[champ] === "Absent" && !e.email);
+    const absentsAvecEmail = seance.etudiants.filter(e => e[champ] === "Absent" && e.email);
+    const absentsSansEmail = seance.etudiants.filter(e => e[champ] === "Absent" && !e.email);
 
     if (absentsAvecEmail.length === 0) {
       return res.json({
-        message:     "Aucun absent avec adresse email à notifier.",
-        nbEnvoyes:   0,
-        nbEchecs:    0,
-        nbSansEmail: absentsSansEmail.length,
-        details:     []
+        message: "Aucun absent avec adresse email à notifier.",
+        nbEnvoyes: 0, nbEchecs: 0,
+        nbSansEmail: absentsSansEmail.length, details: []
       });
     }
 
     const resultats = [];
 
-    // Envoyer un email à chaque étudiant absent
     for (const etudiant of absentsAvecEmail) {
       try {
-        await transporter.sendMail({
-          from:    `"EPT — Présence" <${GMAIL_USER}>`,
+        await resend.emails.send({
+          from:    'EPT Présence <onboarding@resend.dev>',
           to:      etudiant.email,
-          subject: `⚠️ Absence enregistrée — ${matiere} · ${typeSeance} · ${date}`,
-          text:    creerEmailTexte(etudiant, matiere, date, typeSeance, profNom),
+          subject: `⚠️ Absence — ${matiere} · ${typeSeance} · ${date}`,
           html:    creerEmailHTML(etudiant, matiere, date, typeSeance, profNom)
         });
 
         console.log(`✅ Email envoyé → ${etudiant.nom} (${etudiant.email})`);
         resultats.push({ nom: etudiant.nom, email: etudiant.email, statut: 'envoyé' });
 
-      } catch (emailErr) {
-        console.error(`❌ Email échoué → ${etudiant.nom} :`, emailErr.message);
-        resultats.push({
-          nom:    etudiant.nom,
-          email:  etudiant.email,
-          statut: 'echec',
-          erreur: emailErr.message
-        });
+      } catch (err) {
+        console.error(`❌ Email échoué → ${etudiant.nom} :`, err.message);
+        resultats.push({ nom: etudiant.nom, email: etudiant.email, statut: 'echec', erreur: err.message });
       }
     }
 
     const nbEnvoyes = resultats.filter(r => r.statut === 'envoyé').length;
     const nbEchecs  = resultats.filter(r => r.statut === 'echec').length;
 
-    // Sauvegarder l'historique dans la séance
     if (!seance.emailsEnvoyes) seance.emailsEnvoyes = [];
     seance.emailsEnvoyes.push({
-      typeSeance,
-      envoyeA:     new Date(),
-      nbEnvoyes,
-      nbEchecs,
+      typeSeance, envoyeA: new Date(),
+      nbEnvoyes, nbEchecs,
       nbSansEmail: absentsSansEmail.length,
-      details:     resultats
+      details: resultats
     });
     seance.markModified('emailsEnvoyes');
     await seance.save();
 
-    console.log(`📧 Résumé : ${nbEnvoyes} envoyés, ${nbEchecs} échecs, ${absentsSansEmail.length} sans email`);
-
     res.json({
-      message:     `📧 ${nbEnvoyes} email(s) envoyé(s) avec succès.`,
-      nbEnvoyes,
-      nbEchecs,
+      message: `📧 ${nbEnvoyes} email(s) envoyé(s) avec succès.`,
+      nbEnvoyes, nbEchecs,
       nbSansEmail: absentsSansEmail.length,
-      details:     resultats
+      details: resultats
     });
 
   } catch (err) {
@@ -677,7 +530,7 @@ app.post('/prof/notifier-absents', authProf, emailLimiter, async (req, res) => {
 });
 
 // ─────────────────────────────────────────────
-//  ROUTE 8 : MES SÉANCES (PROF)
+//  ROUTE 8 : MES SÉANCES
 // ─────────────────────────────────────────────
 app.get('/prof/mes-seances', authProf, async (req, res) => {
   try {
@@ -685,9 +538,7 @@ app.get('/prof/mes-seances', authProf, async (req, res) => {
       .find({ matiere: req.prof.matiere }, '-token -tentativesBloquees -ipUtilisees')
       .sort({ _id: -1 });
     res.json(seances);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // ─────────────────────────────────────────────
@@ -699,14 +550,10 @@ app.get('/securite-logs', authProf, async (req, res) => {
     const seance = await Seance.findOne({ matiere: req.prof.matiere, date });
     if (!seance) return res.status(404).json({ error: "Séance introuvable." });
     res.json({
-      professorIP:        seance.professorIP,
-      tokenExpiry:        seance.tokenExpiry,
-      ipUtilisees:        seance.ipUtilisees,
-      tentativesBloquees: seance.tentativesBloquees
+      professorIP: seance.professorIP, tokenExpiry: seance.tokenExpiry,
+      ipUtilisees: seance.ipUtilisees, tentativesBloquees: seance.tentativesBloquees
     });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // ─────────────────────────────────────────────
@@ -736,9 +583,7 @@ app.get('/admin/profs', authAdmin, async (req, res) => {
 app.get('/admin/stats', authAdmin, async (req, res) => {
   try {
     const [nbProfs, nbSeances, nbPresencesProfs] = await Promise.all([
-      Prof.countDocuments(),
-      Seance.countDocuments(),
-      PresenceProf.countDocuments()
+      Prof.countDocuments(), Seance.countDocuments(), PresenceProf.countDocuments()
     ]);
     const seances = await Seance.find({}, 'etudiants emailsEnvoyes');
     let totalPresentsS1 = 0, totalPresentsS2 = 0, totalEtudiants = 0, totalEmails = 0;

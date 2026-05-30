@@ -1,7 +1,7 @@
 {
   "name": "presence-qr-code",
-  "version": "5.0.0",
-  "description": "Système de présence par QR Code sécurisé avec notifications Email",
+  "version": "6.0.0",
+  "description": "Système de présence par QR Code sécurisé avec notifications Email via Resend",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -15,6 +15,6 @@
     "express-rate-limit": "^7.1.5",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.0.3",
-    "nodemailer": "^6.9.7"
+    "resend": "^3.2.0"
   }
 }
