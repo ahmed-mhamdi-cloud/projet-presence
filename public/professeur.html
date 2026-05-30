@@ -45,6 +45,10 @@
   .btn-renew:hover{background:rgba(124,58,237,0.1);}
   .btn-outline{background:transparent;border:1px solid var(--border);color:var(--muted);}
   .btn-outline:hover{border-color:var(--accent);color:var(--accent);}
+  .btn-confirm{background:linear-gradient(135deg,var(--success),#059669);color:#fff;width:100%;margin-top:1rem;font-size:0.9rem;padding:0.9rem;}
+  .btn-confirm:hover{box-shadow:0 8px 22px rgba(16,185,129,0.35);transform:translateY(-1px);}
+  .btn-demarrer{background:linear-gradient(135deg,var(--accent),#0090b3);color:#000;font-size:1rem;font-weight:800;padding:0.95rem 1.5rem;}
+  .btn-demarrer:hover{box-shadow:0 8px 28px rgba(0,212,255,0.35);transform:translateY(-2px);}
 
   /* BOUTON EMAIL */
   .btn-email{background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;font-weight:700;}
@@ -105,6 +109,93 @@
   #toast.ok  {background:rgba(16,185,129,0.92);color:#fff;}
   #toast.err {background:rgba(239,68,68,0.92);color:#fff;}
   #toast.warn{background:rgba(245,158,11,0.92);color:#000;}
+
+  /* ── NOUVEAU : Bouton confirmer présence ── */
+  #confirm-zone {
+    display: none;
+    margin-top: 1rem;
+  }
+
+  /* ── NOUVEAU : Bannière "Présence marquée !" ── */
+  #presence-marquee-banner {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    background: linear-gradient(135deg, rgba(16,185,129,0.15), rgba(16,185,129,0.05));
+    border: 1px solid rgba(16,185,129,0.4);
+    border-radius: 12px;
+    padding: 1rem 1.5rem;
+    margin-top: 1rem;
+    font-family: var(--mono);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--success);
+    animation: pulse-success 0.5s ease;
+    text-align: center;
+  }
+  @keyframes pulse-success {
+    0%   { transform: scale(0.92); opacity: 0; }
+    60%  { transform: scale(1.03); opacity: 1; }
+    100% { transform: scale(1);    opacity: 1; }
+  }
+
+  /* ── NOUVEAU : Section séance (cachée initialement) ── */
+  #section-seance-wrapper {
+    display: none;
+    animation: slide-down 0.45s ease;
+  }
+  @keyframes slide-down {
+    from { opacity: 0; transform: translateY(-18px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── NOUVEAU : Carte info prof ── */
+  .prof-info-card {
+    background: linear-gradient(135deg, rgba(0,212,255,0.06), rgba(124,58,237,0.06));
+    border: 1px solid rgba(0,212,255,0.2);
+    border-radius: 16px;
+    padding: 1.4rem 1.6rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .prof-info-title {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--accent);
+    margin-bottom: 0.25rem;
+  }
+  .prof-info-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .prof-info-icon {
+    font-size: 1.1rem;
+    flex-shrink: 0;
+    width: 1.6rem;
+    text-align: center;
+  }
+  .prof-info-label {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    width: 5rem;
+    flex-shrink: 0;
+  }
+  .prof-info-value {
+    font-family: var(--sans);
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .prof-info-value.accent { color: var(--accent); }
 </style>
 </head>
 <body>
@@ -119,7 +210,9 @@
 
 <main>
 
-  <!-- 1. POINTER MA PRÉSENCE -->
+  <!-- ═══════════════════════════════════════════
+       01 · MA PRÉSENCE DU JOUR
+  ═══════════════════════════════════════════ -->
   <p class="section-label">01 · Ma Présence du jour</p>
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;">
@@ -128,71 +221,115 @@
         <p id="presence-date" style="font-family:var(--mono);font-size:0.7rem;color:var(--muted);">—</p>
       </div>
     </div>
-    <button class="btn btn-pointer btn-full" onclick="afficherQRPointer()">
+
+    <!-- Bouton générer QR -->
+    <button class="btn btn-pointer btn-full" id="btn-gen-qr-pointer" onclick="afficherQRPointer()">
       📱 Générer mon QR de pointage
     </button>
+
+    <!-- Zone QR pointage -->
     <div id="qr-pointer">
       <p style="font-family:var(--mono);font-size:0.72rem;color:var(--muted);margin:0.75rem 0 0.5rem;">Scannez ce QR avec votre téléphone</p>
       <div id="qrcode-pointer"></div>
       <p style="font-family:var(--mono);font-size:0.68rem;color:var(--muted);">Valide 5 min · Une seule utilisation</p>
-    </div>
-  </div>
 
-  <!-- 2. SÉANCE ÉTUDIANTS -->
-  <p class="section-label">02 · Séance Étudiants</p>
-  <div class="card">
-    <div class="form-row" style="margin-bottom:0.75rem;">
-      <div>
-        <label>Date</label>
-        <input type="date" id="date" />
-      </div>
-      <div>
-        <label>Séance</label>
-        <select id="typeSeance">
-          <option value="Seance 1">Séance 1</option>
-          <option value="Seance 2">Séance 2</option>
-        </select>
-      </div>
-    </div>
-
-    <button class="btn btn-primary btn-full" onclick="demarrerSeance()">
-      ▶ Générer le QR Code Étudiant
-    </button>
-
-    <!-- Zone QR -->
-    <div id="qr-zone">
-      <div id="qrcode"></div>
-      <div id="timer-bar"><div id="timer-fill" style="width:100%"></div></div>
-      <p id="timer-text">⏳ Expiration dans <span id="countdown">15:00</span></p>
-      <button class="btn btn-renew" onclick="renouvelerToken()">🔄 Renouveler (15 min)</button>
-
-      <hr class="divider">
-
-      <!-- ★ ZONE NOTIFICATION EMAIL ★ -->
-      <div class="email-zone">
-        <p class="email-zone-title">📧 Notifications Email — Absents</p>
-        <p class="email-zone-desc">
-          Envoie automatiquement un email à chaque étudiant absent
-          avec tous les détails de la séance (matière, date, séance 1 ou 2, professeur).
-        </p>
-
-        <button class="btn btn-email" id="btn-email" onclick="notifierAbsents()" style="width:100%;">
-          📨 Envoyer email aux absents de la <span id="label-seance-btn">Séance 1</span>
+      <!-- ── NOUVEAU : bouton de confirmation après scan ── -->
+      <div id="confirm-zone">
+        <button class="btn btn-confirm" id="btn-confirm-presence" onclick="confirmerPresence()">
+          ✅ Ma présence est validée — Accéder à ma séance
         </button>
-
-        <div id="email-result"></div>
-      </div>
-
-      <hr class="divider">
-      <button class="btn btn-outline btn-full" style="font-size:0.75rem;padding:0.5rem;" onclick="toggleLogs()">
-        🛡 Logs de sécurité
-      </button>
-      <div id="logs-panel">
-        <div style="font-family:var(--mono);font-size:0.65rem;color:var(--muted);margin:0.5rem 0 0.3rem;">TENTATIVES BLOQUÉES :</div>
-        <div id="logs-list"></div>
       </div>
     </div>
+
+    <!-- ── NOUVEAU : Bannière "Présence marquée !" ── -->
+    <div id="presence-marquee-banner">
+      ✅ &nbsp; Présence marquée !
+    </div>
   </div>
+
+  <!-- ═══════════════════════════════════════════
+       02 · SÉANCE ÉTUDIANTS  (cachée initialement)
+  ═══════════════════════════════════════════ -->
+  <div id="section-seance-wrapper">
+
+    <p class="section-label">02 · Séance Étudiants</p>
+
+    <!-- ── NOUVEAU : Carte info du prof ── -->
+    <div class="prof-info-card">
+      <p class="prof-info-title">📋 Informations de la séance</p>
+      <div class="prof-info-row">
+        <span class="prof-info-icon">📅</span>
+        <span class="prof-info-label">Date</span>
+        <span class="prof-info-value accent" id="info-date">—</span>
+      </div>
+      <div class="prof-info-row">
+        <span class="prof-info-icon">📚</span>
+        <span class="prof-info-label">Matière</span>
+        <span class="prof-info-value" id="info-matiere">—</span>
+      </div>
+      <div class="prof-info-row">
+        <span class="prof-info-icon">👤</span>
+        <span class="prof-info-label">Professeur</span>
+        <span class="prof-info-value" id="info-nom">—</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="form-row" style="margin-bottom:0.75rem;">
+        <div>
+          <label>Date</label>
+          <input type="date" id="date" />
+        </div>
+        <div>
+          <label>Séance</label>
+          <select id="typeSeance">
+            <option value="Seance 1">Séance 1</option>
+            <option value="Seance 2">Séance 2</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- ── MODIFIÉ : Bouton renommé "Démarrer la séance" ── -->
+      <button class="btn btn-demarrer btn-full" onclick="demarrerSeance()">
+        ▶ Démarrer la séance
+      </button>
+
+      <!-- Zone QR étudiant -->
+      <div id="qr-zone">
+        <div id="qrcode"></div>
+        <div id="timer-bar"><div id="timer-fill" style="width:100%"></div></div>
+        <p id="timer-text">⏳ Expiration dans <span id="countdown">15:00</span></p>
+        <button class="btn btn-renew" onclick="renouvelerToken()">🔄 Renouveler (15 min)</button>
+
+        <hr class="divider">
+
+        <!-- ZONE NOTIFICATION EMAIL -->
+        <div class="email-zone">
+          <p class="email-zone-title">📧 Notifications Email — Absents</p>
+          <p class="email-zone-desc">
+            Envoie automatiquement un email à chaque étudiant absent
+            avec tous les détails de la séance (matière, date, séance 1 ou 2, professeur).
+          </p>
+
+          <button class="btn btn-email" id="btn-email" onclick="notifierAbsents()" style="width:100%;">
+            📨 Envoyer email aux absents de la <span id="label-seance-btn">Séance 1</span>
+          </button>
+
+          <div id="email-result"></div>
+        </div>
+
+        <hr class="divider">
+        <button class="btn btn-outline btn-full" style="font-size:0.75rem;padding:0.5rem;" onclick="toggleLogs()">
+          🛡 Logs de sécurité
+        </button>
+        <div id="logs-panel">
+          <div style="font-family:var(--mono);font-size:0.65rem;color:var(--muted);margin:0.5rem 0 0.3rem;">TENTATIVES BLOQUÉES :</div>
+          <div id="logs-list"></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /section-seance-wrapper -->
 
   <!-- 3. MES SÉANCES -->
   <p class="section-label">03 · Mes séances enregistrées</p>
@@ -237,7 +374,11 @@
   // ── QR Pointage prof
   function afficherQRPointer() {
     const zone = document.getElementById('qr-pointer');
-    if (zone.style.display === 'block') { zone.style.display = 'none'; return; }
+    if (zone.style.display === 'block') {
+      zone.style.display = 'none';
+      document.getElementById('confirm-zone').style.display = 'none';
+      return;
+    }
     const url = `${window.location.origin}/pointer-prof.html?token=${encodeURIComponent(token)}`;
     document.getElementById('qrcode-pointer').innerHTML = '';
     new QRCode(document.getElementById('qrcode-pointer'), {
@@ -245,6 +386,39 @@
       colorDark: '#000', colorLight: '#fff', correctLevel: QRCode.CorrectLevel.H
     });
     zone.style.display = 'block';
+
+    // ── NOUVEAU : afficher le bouton de confirmation après 1 seconde
+    setTimeout(() => {
+      document.getElementById('confirm-zone').style.display = 'block';
+    }, 800);
+  }
+
+  // ── NOUVEAU : Confirmer la présence du prof et révéler la section séance
+  function confirmerPresence() {
+    // 1) Masquer le bouton confirm et le QR
+    document.getElementById('btn-confirm-presence').style.display = 'none';
+
+    // 2) Afficher la bannière "Présence marquée !"
+    const banner = document.getElementById('presence-marquee-banner');
+    banner.style.display = 'flex';
+
+    // 3) Mettre à jour la carte info prof dans la section 02
+    const today = new Date();
+    const dateStr = today.toLocaleDateString('fr-FR', {
+      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+    });
+    document.getElementById('info-date').textContent    = dateStr;
+    document.getElementById('info-matiere').textContent = profMat || '—';
+    document.getElementById('info-nom').textContent     = profNom || '—';
+
+    // 4) Révéler la section séance avec animation (après un court délai)
+    setTimeout(() => {
+      const wrapper = document.getElementById('section-seance-wrapper');
+      wrapper.style.display = 'block';
+      wrapper.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 900);
+
+    toast('✅ Présence marquée ! Démarrez votre séance.', 'ok');
   }
 
   // ── Séance
@@ -309,7 +483,7 @@
     }, 1000);
   }
 
-  // ── ENVOYER EMAILS AUX ABSENTS ★
+  // ── ENVOYER EMAILS AUX ABSENTS
   async function notifierAbsents() {
     if (!currentDate || !currentType)
       return toast('Démarrez d\'abord une séance.', 'err');
@@ -339,9 +513,7 @@
         return;
       }
 
-      // Construire le résumé
       let html = `<strong>${data.message}</strong><br><br>`;
-
       if (data.nbEnvoyes > 0)   html += `<span style="color:var(--success)">✅ ${data.nbEnvoyes} email(s) envoyé(s)</span><br>`;
       if (data.nbEchecs > 0)    html += `<span style="color:var(--danger)">❌ ${data.nbEchecs} email(s) échoué(s)</span><br>`;
       if (data.nbSansEmail > 0) html += `<span style="color:var(--warn)">⚠️ ${data.nbSansEmail} absent(s) sans adresse email</span><br>`;
@@ -426,7 +598,6 @@
         let dateAff = s.date;
         try { dateAff = new Date(s.date + 'T00:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}); } catch {}
 
-        // Derniers emails envoyés
         const emails = s.emailsEnvoyes || [];
         const dernierEmail = emails.length > 0 ? emails[emails.length - 1] : null;
 
