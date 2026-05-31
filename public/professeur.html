@@ -5,12 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard Professeur — EPT</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap');
   :root {
     --bg:#07090f; --surface:#0f1623; --border:#1a2540;
     --accent:#00d4ff; --accent2:#7c3aed; --success:#10b981;
     --danger:#ef4444; --warn:#f59e0b; --email:#3b82f6;
+    --excel:#16a34a; --pdf:#dc2626;
     --text:#e2e8f0; --muted:#64748b;
     --mono:'Space Mono',monospace; --sans:'Syne',sans-serif;
   }
@@ -24,7 +28,7 @@
   .btn-logout{font-family:var(--mono);font-size:0.68rem;color:var(--muted);background:none;border:1px solid var(--border);border-radius:6px;padding:0.35rem 0.75rem;cursor:pointer;transition:all 0.2s;margin-left:1rem;}
   .btn-logout:hover{border-color:var(--danger);color:var(--danger);}
 
-  main{max-width:620px;margin:0 auto;padding:2rem 1rem;}
+  main{max-width:700px;margin:0 auto;padding:2rem 1rem;}
   .section-label{font-family:var(--mono);font-size:0.65rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent);margin-bottom:0.6rem;}
   .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:1.5rem;margin-bottom:1.5rem;}
 
@@ -43,27 +47,33 @@
   .btn-renew:hover{background:rgba(124,58,237,0.1);}
   .btn-outline{background:transparent;border:1px solid var(--border);color:var(--muted);}
   .btn-outline:hover{border-color:var(--accent);color:var(--accent);}
-  .btn-email{background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;font-weight:700;}
+  .btn-email{background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;}
   .btn-email:hover{box-shadow:0 6px 18px rgba(59,130,246,0.35);transform:translateY(-1px);}
-  .btn-email:disabled{opacity:0.5;cursor:not-allowed;transform:none;box-shadow:none;}
-  .btn-demarrer{background:linear-gradient(135deg,var(--accent),#0090b3);color:#000;font-size:1rem;font-weight:800;padding:0.95rem 1.5rem;}
-  .btn-demarrer:hover{box-shadow:0 8px 28px rgba(0,212,255,0.35);transform:translateY(-2px);}
+  .btn-email:disabled{opacity:0.5;cursor:not-allowed;transform:none;}
 
+  /* BOUTONS EXPORT */
+  .btn-excel{background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;font-size:0.75rem;padding:0.5rem 1rem;}
+  .btn-excel:hover{box-shadow:0 4px 14px rgba(22,163,74,0.35);transform:translateY(-1px);}
+  .btn-pdf{background:linear-gradient(135deg,#dc2626,#b91c1c);color:#fff;font-size:0.75rem;padding:0.5rem 1rem;}
+  .btn-pdf:hover{box-shadow:0 4px 14px rgba(220,38,38,0.35);transform:translateY(-1px);}
+
+  /* ZONE EMAIL */
   .email-zone{background:rgba(59,130,246,0.05);border:1px solid rgba(59,130,246,0.2);border-radius:12px;padding:1.25rem;margin-top:0.75rem;}
   .email-zone-title{font-family:var(--mono);font-size:0.68rem;color:var(--email);margin-bottom:0.6rem;letter-spacing:0.06em;text-transform:uppercase;}
   .email-zone-desc{font-family:var(--mono);font-size:0.7rem;color:var(--muted);margin-bottom:1rem;line-height:1.7;}
+
   #email-result{display:none;margin-top:1rem;padding:1rem;border-radius:10px;font-family:var(--mono);font-size:0.75rem;line-height:1.8;}
   #email-result.ok  {background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);color:var(--success);}
   #email-result.err {background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);color:var(--danger);}
   #email-result.warn{background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);color:var(--warn);}
-  .email-detail-row{display:flex;justify-content:space-between;align-items:center;padding:0.3rem 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:0.7rem;flex-wrap:wrap;gap:0.2rem;}
+  .email-detail-row{display:flex;justify-content:space-between;align-items:center;padding:0.3rem 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:0.7rem;}
   .email-detail-row:last-child{border-bottom:none;}
 
+  /* QR */
   #qr-zone{display:none;text-align:center;margin-top:1.25rem;}
   #qrcode{display:inline-block;background:#fff;padding:14px;border-radius:12px;margin:0.75rem 0;}
   #qr-pointer{display:none;text-align:center;margin-top:1rem;}
   #qrcode-pointer{display:inline-block;background:#fff;padding:12px;border-radius:10px;}
-
   #timer-bar{height:5px;border-radius:3px;background:var(--border);overflow:hidden;margin:0.5rem 0;}
   #timer-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--success),var(--accent));transition:width 1s linear;}
   #timer-text{font-family:var(--mono);font-size:0.72rem;color:var(--muted);}
@@ -72,91 +82,37 @@
   .badge-ok    {background:rgba(16,185,129,0.1);color:var(--success);border:1px solid rgba(16,185,129,0.25);}
   .badge-absent{background:rgba(239,68,68,0.08);color:var(--danger);border:1px solid rgba(239,68,68,0.2);}
   .badge-email {background:rgba(59,130,246,0.1);color:var(--email);border:1px solid rgba(59,130,246,0.2);font-size:0.6rem;margin-top:0.2rem;}
-  .seance-card{background:var(--bg);border:1px solid var(--border);border-radius:12px;margin-bottom:1rem;overflow:hidden;}
+
+  /* SÉANCE CARD */
+  .seance-card{background:var(--bg);border:1px solid var(--border);border-radius:12px;margin-bottom:1.25rem;overflow:hidden;}
   .seance-head{display:flex;justify-content:space-between;align-items:center;padding:0.85rem 1rem;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:0.5rem;}
   .seance-head-title{font-family:var(--mono);font-size:0.8rem;}
   .seance-head-date{font-family:var(--mono);font-size:0.7rem;color:var(--muted);}
   .seance-stats{display:flex;gap:1rem;padding:0.5rem 1rem;border-bottom:1px solid var(--border);flex-wrap:wrap;}
   .stat{font-family:var(--mono);font-size:0.68rem;color:var(--muted);}
   .stat strong{color:var(--text);}
+
+  /* BOUTONS EXPORT DANS LA CARD */
+  .export-row{display:flex;gap:0.5rem;padding:0.75rem 1rem;border-bottom:1px solid var(--border);flex-wrap:wrap;align-items:center;}
+  .export-label{font-family:var(--mono);font-size:0.62rem;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;margin-right:0.5rem;}
+
   table{width:100%;border-collapse:collapse;}
   th{font-family:var(--mono);font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);padding:0.6rem 1rem;text-align:left;}
   td{font-family:var(--mono);font-size:0.75rem;padding:0.6rem 1rem;border-top:1px solid rgba(26,37,64,0.5);}
   tr:hover td{background:rgba(0,212,255,0.02);}
+
   .divider{border:none;border-top:1px solid var(--border);margin:1rem 0;}
   #loading{text-align:center;font-family:var(--mono);font-size:0.78rem;color:var(--muted);padding:2rem;}
+
   #logs-panel{display:none;margin-top:0.75rem;}
   .log-entry{display:flex;justify-content:space-between;padding:0.5rem 0.75rem;border-radius:7px;font-family:var(--mono);font-size:0.68rem;margin-bottom:0.3rem;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);color:var(--danger);word-break:break-all;}
   .log-time{color:var(--muted);white-space:nowrap;margin-left:0.5rem;flex-shrink:0;}
+
   #toast{position:fixed;bottom:1.5rem;right:1.5rem;padding:0.85rem 1.25rem;border-radius:10px;font-family:var(--mono);font-size:0.8rem;opacity:0;transform:translateY(12px);transition:all 0.25s;z-index:999;max-width:300px;}
   #toast.show{opacity:1;transform:translateY(0);}
   #toast.ok  {background:rgba(16,185,129,0.92);color:#fff;}
   #toast.err {background:rgba(239,68,68,0.92);color:#fff;}
   #toast.warn{background:rgba(245,158,11,0.92);color:#000;}
-
-  /* ── Indicateur de polling ── */
-  #poll-status {
-    display: none;
-    font-family: var(--mono);
-    font-size: 0.7rem;
-    color: var(--muted);
-    text-align: center;
-    margin-top: 0.9rem;
-    animation: blink 1.4s ease infinite;
-  }
-  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
-
-  /* ── Bannière Présence marquée ── */
-  #presence-marquee-banner {
-    display: none;
-    align-items: center;
-    justify-content: center;
-    gap: 0.6rem;
-    background: linear-gradient(135deg,rgba(16,185,129,0.15),rgba(16,185,129,0.05));
-    border: 1px solid rgba(16,185,129,0.4);
-    border-radius: 12px;
-    padding: 1rem 1.5rem;
-    margin-top: 1rem;
-    font-family: var(--mono);
-    font-size: 1rem;
-    font-weight: 700;
-    color: var(--success);
-    animation: pulse-ok 0.5s ease;
-    text-align: center;
-  }
-  @keyframes pulse-ok {
-    0%  { transform:scale(0.92); opacity:0; }
-    60% { transform:scale(1.03); opacity:1; }
-    100%{ transform:scale(1);    opacity:1; }
-  }
-
-  /* ── Section séance cachée initialement ── */
-  #section-seance-wrapper {
-    display: none;
-    animation: slide-down 0.45s ease;
-  }
-  @keyframes slide-down {
-    from { opacity:0; transform:translateY(-18px); }
-    to   { opacity:1; transform:translateY(0); }
-  }
-
-  /* ── Carte info prof ── */
-  .prof-info-card {
-    background: linear-gradient(135deg,rgba(0,212,255,0.06),rgba(124,58,237,0.06));
-    border: 1px solid rgba(0,212,255,0.2);
-    border-radius: 16px;
-    padding: 1.4rem 1.6rem;
-    margin-bottom: 1.5rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.6rem;
-  }
-  .prof-info-title { font-family:var(--mono);font-size:0.6rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--accent);margin-bottom:0.1rem; }
-  .prof-info-row   { display:flex;align-items:center;gap:0.75rem; }
-  .prof-info-icon  { font-size:1.1rem;flex-shrink:0;width:1.6rem;text-align:center; }
-  .prof-info-label { font-family:var(--mono);font-size:0.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;width:5rem;flex-shrink:0; }
-  .prof-info-value { font-family:var(--sans);font-size:0.92rem;font-weight:700;color:var(--text); }
-  .prof-info-value.accent { color:var(--accent); }
 </style>
 </head>
 <body>
@@ -171,9 +127,7 @@
 
 <main>
 
-  <!-- ══════════════════════════════════════
-       01 · MA PRÉSENCE DU JOUR
-  ══════════════════════════════════════ -->
+  <!-- 1. POINTER MA PRÉSENCE -->
   <p class="section-label">01 · Ma Présence du jour</p>
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;">
@@ -182,108 +136,61 @@
         <p id="presence-date" style="font-family:var(--mono);font-size:0.7rem;color:var(--muted);">—</p>
       </div>
     </div>
-
-    <button class="btn btn-pointer btn-full" id="btn-gen-qr-pointer" onclick="afficherQRPointer()">
+    <button class="btn btn-pointer btn-full" onclick="afficherQRPointer()">
       📱 Générer mon QR de pointage
     </button>
-
-    <!-- Zone QR pointage prof -->
     <div id="qr-pointer">
-      <p style="font-family:var(--mono);font-size:0.72rem;color:var(--muted);margin:0.75rem 0 0.5rem;">
-        Scannez ce QR avec votre téléphone
-      </p>
+      <p style="font-family:var(--mono);font-size:0.72rem;color:var(--muted);margin:0.75rem 0 0.5rem;">Scannez ce QR avec votre téléphone</p>
       <div id="qrcode-pointer"></div>
-      <p style="font-family:var(--mono);font-size:0.68rem;color:var(--muted);">Valide 5 min · Une seule utilisation</p>
-
-      <!-- Indicateur d'attente de scan -->
-      <div id="poll-status">⏳ &nbsp; En attente du scan…</div>
     </div>
-
-    <!-- Bannière succès (apparaît automatiquement après le scan réel) -->
-    <div id="presence-marquee-banner">✅ &nbsp; Présence marquée !</div>
   </div>
 
-  <!-- ══════════════════════════════════════
-       02 · SÉANCE ÉTUDIANTS  (cachée jusqu'à présence validée)
-  ══════════════════════════════════════ -->
-  <div id="section-seance-wrapper">
-
-    <p class="section-label">02 · Séance Étudiants</p>
-
-    <!-- Carte info prof -->
-    <div class="prof-info-card">
-      <p class="prof-info-title">📋 Informations de la séance</p>
-      <div class="prof-info-row">
-        <span class="prof-info-icon">📅</span>
-        <span class="prof-info-label">Date</span>
-        <span class="prof-info-value accent" id="info-date">—</span>
-      </div>
-      <div class="prof-info-row">
-        <span class="prof-info-icon">📚</span>
-        <span class="prof-info-label">Matière</span>
-        <span class="prof-info-value" id="info-matiere">—</span>
-      </div>
-      <div class="prof-info-row">
-        <span class="prof-info-icon">👤</span>
-        <span class="prof-info-label">Professeur</span>
-        <span class="prof-info-value" id="info-nom">—</span>
+  <!-- 2. SÉANCE ÉTUDIANTS -->
+  <p class="section-label">02 · Séance Étudiants</p>
+  <div class="card">
+    <div class="form-row" style="margin-bottom:0.75rem;">
+      <div><label>Date</label><input type="date" id="date" /></div>
+      <div>
+        <label>Séance</label>
+        <select id="typeSeance">
+          <option value="Seance 1">Séance 1</option>
+          <option value="Seance 2">Séance 2</option>
+        </select>
       </div>
     </div>
 
-    <div class="card">
-      <div class="form-row" style="margin-bottom:0.75rem;">
-        <div>
-          <label>Date</label>
-          <input type="date" id="date" />
-        </div>
-        <div>
-          <label>Séance</label>
-          <select id="typeSeance">
-            <option value="Seance 1">Séance 1</option>
-            <option value="Seance 2">Séance 2</option>
-          </select>
-        </div>
-      </div>
+    <button class="btn btn-primary btn-full" onclick="demarrerSeance()">
+      ▶ Générer le QR Code Étudiant
+    </button>
 
-      <button class="btn btn-demarrer btn-full" onclick="demarrerSeance()">
-        ▶ Démarrer la séance
-      </button>
+    <div id="qr-zone">
+      <div id="qrcode"></div>
+      <div id="timer-bar"><div id="timer-fill" style="width:100%"></div></div>
+      <p id="timer-text">⏳ Expiration dans <span id="countdown">15:00</span></p>
+      <button class="btn btn-renew" onclick="renouvelerToken()">🔄 Renouveler (15 min)</button>
 
-      <!-- Zone QR étudiant -->
-      <div id="qr-zone">
-        <div id="qrcode"></div>
-        <div id="timer-bar"><div id="timer-fill" style="width:100%"></div></div>
-        <p id="timer-text">⏳ Expiration dans <span id="countdown">15:00</span></p>
-        <button class="btn btn-renew" onclick="renouvelerToken()">🔄 Renouveler (15 min)</button>
+      <hr class="divider">
 
-        <hr class="divider">
-
-        <div class="email-zone">
-          <p class="email-zone-title">📧 Notifications Email — Absents</p>
-          <p class="email-zone-desc">
-            Envoie automatiquement un email à chaque étudiant absent
-            avec tous les détails de la séance (matière, date, séance 1 ou 2, professeur).
-          </p>
-          <button class="btn btn-email" id="btn-email" onclick="notifierAbsents()" style="width:100%;">
-            📨 Envoyer email aux absents de la <span id="label-seance-btn">Séance 1</span>
-          </button>
-          <div id="email-result"></div>
-        </div>
-
-        <hr class="divider">
-        <button class="btn btn-outline btn-full" style="font-size:0.75rem;padding:0.5rem;" onclick="toggleLogs()">
-          🛡 Logs de sécurité
+      <!-- ZONE EMAIL -->
+      <div class="email-zone">
+        <p class="email-zone-title">📧 Notifications Email — Absents</p>
+        <p class="email-zone-desc">Envoie un email à chaque étudiant absent avec tous les détails de la séance.</p>
+        <button class="btn btn-email" id="btn-email" onclick="notifierAbsents()" style="width:100%;">
+          📨 Envoyer email aux absents de la <span id="label-seance-btn">Séance 1</span>
         </button>
-        <div id="logs-panel">
-          <div style="font-family:var(--mono);font-size:0.65rem;color:var(--muted);margin:0.5rem 0 0.3rem;">TENTATIVES BLOQUÉES :</div>
-          <div id="logs-list"></div>
-        </div>
+        <div id="email-result"></div>
+      </div>
+
+      <hr class="divider">
+      <button class="btn btn-outline btn-full" style="font-size:0.75rem;padding:0.5rem;" onclick="toggleLogs()">🛡 Logs de sécurité</button>
+      <div id="logs-panel">
+        <div style="font-family:var(--mono);font-size:0.65rem;color:var(--muted);margin:0.5rem 0 0.3rem;">TENTATIVES BLOQUÉES :</div>
+        <div id="logs-list"></div>
       </div>
     </div>
+  </div>
 
-  </div><!-- /section-seance-wrapper -->
-
-  <!-- 03 · MES SÉANCES -->
+  <!-- 3. MES SÉANCES -->
   <p class="section-label">03 · Mes séances enregistrées</p>
   <div id="loading">⏳ Chargement…</div>
   <div id="mes-seances"></div>
@@ -300,8 +207,7 @@
 
   document.getElementById('nav-nom').textContent     = profNom || '—';
   document.getElementById('nav-matiere').textContent = profMat || '—';
-  document.getElementById('presence-date').textContent =
-    new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  document.getElementById('presence-date').textContent = new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
   document.getElementById('date').valueAsDate = new Date();
 
   document.getElementById('typeSeance').addEventListener('change', function() {
@@ -323,87 +229,10 @@
     return { 'Content-Type':'application/json', 'Authorization': `Bearer ${token}` };
   }
 
-  // ══════════════════════════════════════════
-  //  POLLING — vérifie si le scan est effectué
-  // ══════════════════════════════════════════
-  let pollInterval = null;
-
-  function demarrerPolling() {
-    if (pollInterval) return; // déjà en cours
-    document.getElementById('poll-status').style.display = 'block';
-
-    pollInterval = setInterval(async () => {
-      try {
-        const res  = await fetch('/prof/ma-presence', { headers: authHeaders() });
-        const data = await res.json();
-
-        if (data.presente) {
-          // ✅ Scan confirmé en base → arrêter le polling
-          clearInterval(pollInterval);
-          pollInterval = null;
-          onPresenceConfirmee(data.heure);
-        }
-      } catch { /* réseau indisponible, on réessaie */ }
-    }, 2500); // toutes les 2,5 secondes
-  }
-
-  function onPresenceConfirmee(heure) {
-    // 1. Cacher l'indicateur de polling
-    document.getElementById('poll-status').style.display = 'none';
-
-    // 2. Cacher le bouton "Générer QR"
-    document.getElementById('btn-gen-qr-pointer').style.display = 'none';
-
-    // 3. Afficher la bannière "Présence marquée !"
-    const banner = document.getElementById('presence-marquee-banner');
-    const heureStr = heure ? ` à ${heure}` : '';
-    banner.innerHTML = `✅ &nbsp; Présence marquée${heureStr} !`;
-    banner.style.display = 'flex';
-
-    // 4. Remplir la carte info prof
-    const today = new Date();
-    document.getElementById('info-date').textContent    =
-      today.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-    document.getElementById('info-matiere').textContent = profMat || '—';
-    document.getElementById('info-nom').textContent     = profNom || '—';
-
-    // 5. Révéler la section séance avec animation
-    setTimeout(() => {
-      const wrapper = document.getElementById('section-seance-wrapper');
-      wrapper.style.display = 'block';
-      wrapper.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 800);
-
-    toast(`✅ Présence confirmée${heure ? ' à ' + heure : ''} — Démarrez votre séance.`);
-  }
-
-  // ══════════════════════════════════════════
-  //  Au chargement : vérifier si déjà pointé aujourd'hui
-  // ══════════════════════════════════════════
-  async function verifierPresenceAuChargement() {
-    try {
-      const res  = await fetch('/prof/ma-presence', { headers: authHeaders() });
-      if (res.status === 401 || res.status === 403) { logout(); return; }
-      const data = await res.json();
-      if (data.presente) {
-        // Déjà pointé → afficher directement la section séance
-        document.getElementById('qr-pointer').style.display = 'none';
-        onPresenceConfirmee(data.heure);
-      }
-    } catch { /* silencieux */ }
-  }
-
-  // ══════════════════════════════════════════
-  //  QR Pointage prof
-  // ══════════════════════════════════════════
+  // ── QR Pointage prof
   function afficherQRPointer() {
     const zone = document.getElementById('qr-pointer');
-    if (zone.style.display === 'block') {
-      zone.style.display = 'none';
-      document.getElementById('poll-status').style.display = 'none';
-      if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
-      return;
-    }
+    if (zone.style.display === 'block') { zone.style.display = 'none'; return; }
     const url = `${window.location.origin}/pointer-prof.html?token=${encodeURIComponent(token)}`;
     document.getElementById('qrcode-pointer').innerHTML = '';
     new QRCode(document.getElementById('qrcode-pointer'), {
@@ -411,14 +240,9 @@
       colorDark: '#000', colorLight: '#fff', correctLevel: QRCode.CorrectLevel.H
     });
     zone.style.display = 'block';
-
-    // Démarrer le polling dès que le QR est affiché
-    demarrerPolling();
   }
 
-  // ══════════════════════════════════════════
-  //  SÉANCE ÉTUDIANTS
-  // ══════════════════════════════════════════
+  // ── Séance
   let timerInterval = null, expiryDate = null, currentDate, currentType;
 
   async function demarrerSeance() {
@@ -432,12 +256,10 @@
       const data = await res.json();
       if (res.status === 401 || res.status === 403) { logout(); return; }
       if (!res.ok) return toast(data.error, 'err');
-
       afficherQR(data.token, data.matiere, date, typeSeance, data.expiry);
       document.getElementById('email-result').style.display = 'none';
       document.getElementById('btn-email').disabled = false;
-      document.getElementById('btn-email').innerHTML =
-        `📨 Envoyer email aux absents de la <span id="label-seance-btn">${typeSeance}</span>`;
+      document.getElementById('btn-email').innerHTML = `📨 Envoyer email aux absents de la <span id="label-seance-btn">${typeSeance}</span>`;
       toast('✅ QR Code actif 15 min');
     } catch { toast('Erreur réseau.', 'err'); }
   }
@@ -467,70 +289,65 @@
     if (timerInterval) clearInterval(timerInterval);
     const TOTAL = 15 * 60 * 1000;
     timerInterval = setInterval(() => {
-      const r   = expiryDate - Date.now();
-      const pct = Math.max(0, (r / TOTAL) * 100);
-      const m   = Math.max(0, Math.floor(r / 60000));
-      const s   = Math.max(0, Math.floor((r % 60000) / 1000));
+      const r = expiryDate - Date.now(), pct = Math.max(0,(r/TOTAL)*100);
+      const m = Math.max(0,Math.floor(r/60000)), s = Math.max(0,Math.floor((r%60000)/1000));
       document.getElementById('timer-fill').style.width = `${pct}%`;
       if (pct < 20) document.getElementById('timer-fill').style.background = 'linear-gradient(90deg,#ef4444,#f59e0b)';
-      document.getElementById('countdown').textContent =
-        `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-      if (r <= 0) { clearInterval(timerInterval); document.getElementById('countdown').textContent = 'EXPIRÉ'; toast('⚠ QR expiré.', 'err'); }
+      document.getElementById('countdown').textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+      if (r <= 0) { clearInterval(timerInterval); document.getElementById('countdown').textContent = 'EXPIRÉ'; toast('⚠ QR expiré.','err'); }
     }, 1000);
   }
 
+  // ── Notifications email
   async function notifierAbsents() {
-    if (!currentDate || !currentType) return toast('Démarrez d\'abord une séance.', 'err');
-    const btn    = document.getElementById('btn-email');
+    if (!currentDate || !currentType) return toast('Démarrez d\'abord une séance.','err');
+    const btn = document.getElementById('btn-email');
     const resDIV = document.getElementById('email-result');
-    btn.disabled = true; btn.textContent = '⏳ Envoi des emails en cours…';
+    btn.disabled = true; btn.textContent = '⏳ Envoi en cours…';
     resDIV.style.display = 'none';
     try {
-      const res  = await fetch('/prof/notifier-absents', {
-        method:'POST', headers:authHeaders(),
-        body:JSON.stringify({ date:currentDate, typeSeance:currentType })
-      });
+      const res  = await fetch('/prof/notifier-absents', { method:'POST', headers:authHeaders(), body:JSON.stringify({date:currentDate, typeSeance:currentType}) });
       const data = await res.json();
       btn.disabled = false;
       btn.innerHTML = `📨 Envoyer email aux absents de la <span id="label-seance-btn">${currentType}</span>`;
       if (!res.ok) { resDIV.className='email-result err'; resDIV.innerHTML=`❌ ${data.error}`; resDIV.style.display='block'; return; }
       let html = `<strong>${data.message}</strong><br><br>`;
-      if (data.nbEnvoyes > 0)   html += `<span style="color:var(--success)">✅ ${data.nbEnvoyes} email(s) envoyé(s)</span><br>`;
-      if (data.nbEchecs > 0)    html += `<span style="color:var(--danger)">❌ ${data.nbEchecs} email(s) échoué(s)</span><br>`;
-      if (data.nbSansEmail > 0) html += `<span style="color:var(--warn)">⚠️ ${data.nbSansEmail} absent(s) sans adresse email</span><br>`;
-      if (data.details && data.details.length > 0) {
+      if (data.nbEnvoyes > 0)   html += `<span style="color:var(--success)">✅ ${data.nbEnvoyes} envoyé(s)</span><br>`;
+      if (data.nbEchecs > 0)    html += `<span style="color:var(--danger)">❌ ${data.nbEchecs} échoué(s)</span><br>`;
+      if (data.nbSansEmail > 0) html += `<span style="color:var(--warn)">⚠️ ${data.nbSansEmail} sans email</span><br>`;
+      if (data.details?.length > 0) {
         html += `<div style="border-top:1px solid rgba(255,255,255,0.07);margin:0.75rem 0;padding-top:0.75rem;">`;
-        html += `<div style="font-size:0.62rem;letter-spacing:0.08em;margin-bottom:0.5rem;color:var(--muted);">DÉTAILS :</div>`;
         data.details.forEach(d => {
-          const ic=d.statut==='envoyé'?'✅':'❌', col=d.statut==='envoyé'?'var(--success)':'var(--danger)', st=d.statut==='envoyé'?'Email envoyé':'Échec';
-          html += `<div class="email-detail-row"><span>${ic} ${d.nom}</span><span style="color:${col};font-size:0.65rem;">${st}</span></div>`;
+          const ic = d.statut==='envoyé'?'✅':'❌';
+          const col = d.statut==='envoyé'?'var(--success)':'var(--danger)';
+          html += `<div class="email-detail-row"><span>${ic} ${d.nom}</span><span style="color:${col};font-size:0.65rem;">${d.statut==='envoyé'?'Envoyé':'Échec'}</span></div>`;
         });
-        html += `</div>`;
+        html += '</div>';
       }
       const type = data.nbEchecs>0&&data.nbEnvoyes===0?'err':data.nbEchecs>0?'warn':'ok';
       resDIV.className=`email-result ${type}`; resDIV.innerHTML=html; resDIV.style.display='block';
       toast(data.message, data.nbEnvoyes>0?'ok':'warn');
       setTimeout(chargerMesSeances, 2000);
     } catch {
-      btn.disabled=false;
-      btn.innerHTML=`📨 Envoyer email aux absents de la <span id="label-seance-btn">${currentType}</span>`;
-      resDIV.className='email-result err'; resDIV.innerHTML='❌ Erreur réseau lors de l\'envoi.'; resDIV.style.display='block';
+      btn.disabled=false; btn.innerHTML=`📨 Envoyer email aux absents de la <span id="label-seance-btn">${currentType}</span>`;
+      resDIV.className='email-result err'; resDIV.innerHTML='❌ Erreur réseau.'; resDIV.style.display='block';
     }
   }
 
+  // ── Logs
   async function toggleLogs() {
     const panel = document.getElementById('logs-panel');
-    if (panel.style.display === 'block') { panel.style.display='none'; return; }
+    if (panel.style.display==='block') { panel.style.display='none'; return; }
     if (!currentDate) return;
     try {
       const res  = await fetch(`/securite-logs?date=${currentDate}`, { headers:authHeaders() });
       const data = await res.json();
       const list = document.getElementById('logs-list');
-      list.innerHTML = '';
-      if (!data.tentativesBloquees || data.tentativesBloquees.length === 0) {
+      list.innerHTML='';
+      if (!data.tentativesBloquees||data.tentativesBloquees.length===0) {
         list.innerHTML='<div style="font-family:var(--mono);font-size:0.72rem;color:var(--success);padding:0.4rem;">✅ Aucune tentative suspecte.</div>';
       } else {
-        data.tentativesBloquees.slice(-15).reverse().forEach(t => {
+        data.tentativesBloquees.slice(-15).reverse().forEach(t=>{
           const d=document.createElement('div'); d.className='log-entry';
           d.innerHTML=`<span>${t.ip} — ${t.raison}</span><span class="log-time">${new Date(t.date).toLocaleTimeString()}</span>`;
           list.appendChild(d);
@@ -540,34 +357,239 @@
     } catch { toast('Impossible de charger les logs.','err'); }
   }
 
+  // ─────────────────────────────────────────
+  //  EXPORT EXCEL
+  // ─────────────────────────────────────────
+  function exporterExcel(seance) {
+    const wb = XLSX.utils.book_new();
+
+    // Feuille 1 — Séance 1
+    const dataS1 = [
+      ['EPT — Liste de Présence'],
+      [`Matière : ${seance.matiere}`],
+      [`Date : ${seance.date}`],
+      [`Professeur : ${seance.profNom || profNom}`],
+      [`Séance : Séance 1`],
+      [],
+      ['N°', 'Nom de l\'étudiant', 'Email', 'Statut Séance 1']
+    ];
+    seance.etudiants.forEach((e, i) => {
+      dataS1.push([i+1, e.nom, e.email || '—', e.s1]);
+    });
+    const wsS1 = XLSX.utils.aoa_to_sheet(dataS1);
+    wsS1['!cols'] = [{wch:5},{wch:25},{wch:35},{wch:15}];
+    XLSX.utils.book_append_sheet(wb, wsS1, 'Séance 1');
+
+    // Feuille 2 — Séance 2
+    const dataS2 = [
+      ['EPT — Liste de Présence'],
+      [`Matière : ${seance.matiere}`],
+      [`Date : ${seance.date}`],
+      [`Professeur : ${seance.profNom || profNom}`],
+      [`Séance : Séance 2`],
+      [],
+      ['N°', 'Nom de l\'étudiant', 'Email', 'Statut Séance 2']
+    ];
+    seance.etudiants.forEach((e, i) => {
+      dataS2.push([i+1, e.nom, e.email || '—', e.s2]);
+    });
+    const wsS2 = XLSX.utils.aoa_to_sheet(dataS2);
+    wsS2['!cols'] = [{wch:5},{wch:25},{wch:35},{wch:15}];
+    XLSX.utils.book_append_sheet(wb, wsS2, 'Séance 2');
+
+    // Feuille 3 — Résumé complet
+    const dataResume = [
+      ['EPT — Résumé Complet de Présence'],
+      [`Matière : ${seance.matiere}`],
+      [`Date : ${seance.date}`],
+      [`Professeur : ${seance.profNom || profNom}`],
+      [],
+      ['N°', 'Nom de l\'étudiant', 'Email', 'Séance 1', 'Séance 2']
+    ];
+    seance.etudiants.forEach((e, i) => {
+      dataResume.push([i+1, e.nom, e.email || '—', e.s1, e.s2]);
+    });
+
+    // Statistiques
+    const pS1 = seance.etudiants.filter(e => e.s1==="Present").length;
+    const pS2 = seance.etudiants.filter(e => e.s2==="Present").length;
+    const total = seance.etudiants.length;
+    dataResume.push([]);
+    dataResume.push(['STATISTIQUES']);
+    dataResume.push(['Total étudiants', total]);
+    dataResume.push(['Présents Séance 1', pS1, '', `${Math.round((pS1/total)*100)}%`]);
+    dataResume.push(['Absents Séance 1', total-pS1, '', `${Math.round(((total-pS1)/total)*100)}%`]);
+    dataResume.push(['Présents Séance 2', pS2, '', `${Math.round((pS2/total)*100)}%`]);
+    dataResume.push(['Absents Séance 2', total-pS2, '', `${Math.round(((total-pS2)/total)*100)}%`]);
+
+    const wsResume = XLSX.utils.aoa_to_sheet(dataResume);
+    wsResume['!cols'] = [{wch:5},{wch:25},{wch:35},{wch:15},{wch:15}];
+    XLSX.utils.book_append_sheet(wb, wsResume, 'Résumé');
+
+    // Télécharger
+    XLSX.writeFile(wb, `presence_${seance.matiere}_${seance.date}.xlsx`);
+    toast('✅ Fichier Excel téléchargé !');
+  }
+
+  // ─────────────────────────────────────────
+  //  EXPORT PDF
+  // ─────────────────────────────────────────
+  function exporterPDF(seance) {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    const pS1    = seance.etudiants.filter(e => e.s1==="Present").length;
+    const pS2    = seance.etudiants.filter(e => e.s2==="Present").length;
+    const total  = seance.etudiants.length;
+    const profN  = seance.profNom || profNom;
+
+    // ── EN-TÊTE
+    doc.setFillColor(7, 9, 15);
+    doc.rect(0, 0, 210, 40, 'F');
+    doc.setTextColor(0, 212, 255);
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.text('EPT — Liste de Présence', 105, 18, { align: 'center' });
+    doc.setTextColor(100, 116, 139);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.text('École Polytechnique de Tunisie · Système automatique de présence', 105, 28, { align: 'center' });
+
+    // ── INFOS SÉANCE
+    doc.setFillColor(15, 22, 35);
+    doc.rect(0, 40, 210, 32, 'F');
+    doc.setTextColor(226, 232, 240);
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`${seance.matiere}`, 15, 52);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(100, 116, 139);
+    doc.text(`Date : ${seance.date}`, 15, 61);
+    doc.text(`Professeur : ${profN}`, 80, 61);
+    doc.text(`Généré le : ${new Date().toLocaleString('fr-FR')}`, 15, 68);
+
+    // ── STATISTIQUES
+    doc.setFillColor(26, 37, 64);
+    doc.rect(0, 72, 210, 18, 'F');
+    doc.setTextColor(0, 212, 255);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`TOTAL : ${total} étudiants`, 15, 82);
+    doc.setTextColor(16, 185, 129);
+    doc.text(`S1 — Présents : ${pS1}  Absents : ${total-pS1}`, 70, 82);
+    doc.setTextColor(124, 58, 237);
+    doc.text(`S2 — Présents : ${pS2}  Absents : ${total-pS2}`, 145, 82);
+
+    // ── TABLEAU
+    const rows = seance.etudiants.map((e, i) => [
+      i+1,
+      e.nom,
+      e.s1 === "Present" ? "✓ Présent" : "✗ Absent",
+      e.s2 === "Present" ? "✓ Présent" : "✗ Absent"
+    ]);
+
+    doc.autoTable({
+      startY: 95,
+      head: [['N°', 'Nom de l\'étudiant', 'Séance 1', 'Séance 2']],
+      body: rows,
+      theme: 'grid',
+      headStyles: {
+        fillColor: [7, 9, 15],
+        textColor: [0, 212, 255],
+        fontStyle: 'bold',
+        fontSize: 9,
+        halign: 'center'
+      },
+      bodyStyles: {
+        fillColor: [15, 22, 35],
+        textColor: [226, 232, 240],
+        fontSize: 9,
+        lineColor: [26, 37, 64]
+      },
+      alternateRowStyles: {
+        fillColor: [11, 16, 26]
+      },
+      columnStyles: {
+        0: { halign: 'center', cellWidth: 12 },
+        1: { cellWidth: 80 },
+        2: { halign: 'center', cellWidth: 45 },
+        3: { halign: 'center', cellWidth: 45 }
+      },
+      didParseCell: (data) => {
+        if (data.section === 'body') {
+          if (data.column.index === 2 || data.column.index === 3) {
+            if (data.cell.raw && data.cell.raw.includes('Présent')) {
+              data.cell.styles.textColor = [16, 185, 129];
+            } else if (data.cell.raw && data.cell.raw.includes('Absent')) {
+              data.cell.styles.textColor = [239, 68, 68];
+            }
+          }
+        }
+      }
+    });
+
+    // ── FOOTER
+    const pageH = doc.internal.pageSize.height;
+    doc.setFillColor(7, 9, 15);
+    doc.rect(0, pageH-15, 210, 15, 'F');
+    doc.setTextColor(51, 65, 85);
+    doc.setFontSize(7);
+    doc.text('© EPT — Système de Présence Automatique · Document généré automatiquement', 105, pageH-6, { align: 'center' });
+
+    doc.save(`presence_${seance.matiere}_${seance.date}.pdf`);
+    toast('✅ Fichier PDF téléchargé !');
+  }
+
+  // ─────────────────────────────────────────
+  //  CHARGER MES SÉANCES
+  // ─────────────────────────────────────────
   async function chargerMesSeances() {
     try {
-      const res    = await fetch('/prof/mes-seances', { headers:authHeaders() });
+      const res    = await fetch('/prof/mes-seances', { headers: authHeaders() });
       if (res.status===401||res.status===403) { logout(); return; }
       const seances = await res.json();
-      document.getElementById('loading').style.display='none';
+      document.getElementById('loading').style.display = 'none';
       const cont = document.getElementById('mes-seances');
-      cont.innerHTML='';
+      cont.innerHTML = '';
+
       if (!seances||seances.length===0) {
-        cont.innerHTML='<div style="text-align:center;font-family:var(--mono);font-size:0.78rem;color:var(--muted);padding:2rem;">Aucune séance enregistrée.</div>';
+        cont.innerHTML = '<div style="text-align:center;font-family:var(--mono);font-size:0.78rem;color:var(--muted);padding:2rem;">Aucune séance enregistrée.</div>';
         return;
       }
-      seances.forEach(s => {
-        const etu=s.etudiants||[];
-        const pS1=etu.filter(e=>e.s1==="Present").length, pS2=etu.filter(e=>e.s2==="Present").length;
-        const aS1=etu.filter(e=>e.s1==="Absent").length,  aS2=etu.filter(e=>e.s2==="Absent").length;
-        let dateAff=s.date;
-        try { dateAff=new Date(s.date+'T00:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}); } catch {}
-        const emails=s.emailsEnvoyes||[];
-        const dernierEmail=emails.length>0?emails[emails.length-1]:null;
-        const lignes=etu.map(e=>{
-          const cs1=e.s1==="Present"?'badge-ok':'badge-absent', cs2=e.s2==="Present"?'badge-ok':'badge-absent';
-          const emailBadge=e.email?`<br><span class="badge badge-email">📧 ${e.email}</span>`:`<br><span style="color:var(--muted);font-size:0.62rem;font-family:var(--mono);">sans email</span>`;
-          return `<tr><td>${e.nom}${emailBadge}</td><td><span class="badge ${cs1}">${e.s1==="Present"?'✓':''} ${e.s1}</span></td><td><span class="badge ${cs2}">${e.s2==="Present"?'✓':''} ${e.s2}</span></td></tr>`;
+
+      seances.forEach((s, idx) => {
+        const etu   = s.etudiants || [];
+        const pS1   = etu.filter(e => e.s1==="Present").length;
+        const pS2   = etu.filter(e => e.s2==="Present").length;
+        const aS1   = etu.filter(e => e.s1==="Absent").length;
+        const aS2   = etu.filter(e => e.s2==="Absent").length;
+        let dateAff = s.date;
+        try { dateAff = new Date(s.date+'T00:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}); } catch {}
+
+        const emails = s.emailsEnvoyes || [];
+        const dernierEmail = emails.length>0 ? emails[emails.length-1] : null;
+
+        const lignes = etu.map(e => {
+          const cs1 = e.s1==="Present"?'badge-ok':'badge-absent';
+          const cs2 = e.s2==="Present"?'badge-ok':'badge-absent';
+          const emailBadge = e.email
+            ? `<br><span class="badge badge-email">📧 ${e.email}</span>`
+            : `<br><span style="color:var(--muted);font-size:0.62rem;font-family:var(--mono);">sans email</span>`;
+          return `<tr>
+            <td>${e.nom}${emailBadge}</td>
+            <td><span class="badge ${cs1}">${e.s1==="Present"?'✓':''} ${e.s1}</span></td>
+            <td><span class="badge ${cs2}">${e.s2==="Present"?'✓':''} ${e.s2}</span></td>
+          </tr>`;
         }).join('');
-        const card=document.createElement('div'); card.className='seance-card';
-        card.innerHTML=`
-          <div class="seance-head"><span class="seance-head-title">${s.matiere}</span><span class="seance-head-date">📅 ${dateAff}</span></div>
+
+        const card = document.createElement('div');
+        card.className = 'seance-card';
+        card.innerHTML = `
+          <div class="seance-head">
+            <span class="seance-head-title">${s.matiere}</span>
+            <span class="seance-head-date">📅 ${dateAff}</span>
+          </div>
           <div class="seance-stats">
             <span class="stat"><strong>${etu.length}</strong> étudiants</span>
             <span class="stat"><strong style="color:var(--success)">${pS1}</strong> présents S1</span>
@@ -575,15 +597,41 @@
             <span class="stat"><strong style="color:var(--success)">${pS2}</strong> présents S2</span>
             <span class="stat"><strong style="color:var(--danger)">${aS2}</strong> absents S2</span>
           </div>
-          ${dernierEmail?`<div style="padding:0.5rem 1rem;border-bottom:1px solid var(--border);"><span class="badge" style="background:rgba(59,130,246,0.1);color:var(--email);border:1px solid rgba(59,130,246,0.2);font-size:0.62rem;">📧 ${dernierEmail.nbEnvoyes} email(s) envoyé(s) — ${new Date(dernierEmail.envoyeA).toLocaleString('fr-FR')} — ${dernierEmail.typeSeance}</span></div>`:''}
-          <div style="overflow-x:auto;"><table><thead><tr><th>Nom & Email</th><th>Séance 1</th><th>Séance 2</th></tr></thead><tbody>${lignes}</tbody></table></div>`;
+
+          <!-- BOUTONS EXPORT -->
+          <div class="export-row">
+            <span class="export-label">📥 Exporter :</span>
+            <button class="btn btn-excel" onclick="exporterExcel(seancesData[${idx}])">
+              📊 Excel
+            </button>
+            <button class="btn btn-pdf" onclick="exporterPDF(seancesData[${idx}])">
+              📄 PDF
+            </button>
+          </div>
+
+          ${dernierEmail ? `<div style="padding:0.5rem 1rem;border-bottom:1px solid var(--border);">
+            <span class="badge" style="background:rgba(59,130,246,0.1);color:var(--email);border:1px solid rgba(59,130,246,0.2);font-size:0.62rem;">
+              📧 ${dernierEmail.nbEnvoyes} email(s) — ${new Date(dernierEmail.envoyeA).toLocaleString('fr-FR')} — ${dernierEmail.typeSeance}
+            </span>
+          </div>` : ''}
+
+          <div style="overflow-x:auto;">
+            <table>
+              <thead><tr><th>Nom & Email</th><th>Séance 1</th><th>Séance 2</th></tr></thead>
+              <tbody>${lignes}</tbody>
+            </table>
+          </div>`;
         cont.appendChild(card);
       });
-    } catch { document.getElementById('loading').textContent='❌ Erreur de chargement.'; }
+
+      // Stocker les données pour l'export
+      window.seancesData = seances;
+
+    } catch {
+      document.getElementById('loading').textContent = '❌ Erreur de chargement.';
+    }
   }
 
-  // ── Initialisation
-  verifierPresenceAuChargement();
   chargerMesSeances();
 </script>
 </body>

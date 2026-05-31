@@ -4,107 +4,102 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard Admin — EPT</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap');
   :root {
     --bg:#07090f; --surface:#0f1623; --border:#1a2540;
     --purple:#7c3aed; --accent:#00d4ff; --success:#10b981;
     --danger:#ef4444; --warn:#f59e0b; --text:#e2e8f0; --muted:#64748b;
+    --excel:#16a34a; --pdf:#dc2626;
     --mono:'Space Mono',monospace; --sans:'Syne',sans-serif;
   }
   *{margin:0;padding:0;box-sizing:border-box}
-  body {
-    background:var(--bg); color:var(--text); font-family:var(--sans);
-    min-height:100vh;
-    background-image:radial-gradient(ellipse at 80% 0%,rgba(124,58,237,0.07) 0%,transparent 55%);
-  }
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;background-image:radial-gradient(ellipse at 80% 0%,rgba(124,58,237,0.07) 0%,transparent 55%);}
 
-  nav {
-    display:flex; align-items:center; justify-content:space-between;
-    padding:1rem 1.5rem; border-bottom:1px solid var(--border);
-    background:rgba(15,22,35,0.95); backdrop-filter:blur(12px);
-    position:sticky; top:0; z-index:100;
-  }
-  .nav-brand { font-size:0.85rem; font-weight:800; font-family:var(--mono); }
-  .nav-brand span { color:#a78bfa; }
-  .btn-logout { font-family:var(--mono); font-size:0.68rem; color:var(--muted); background:none; border:1px solid var(--border); border-radius:6px; padding:0.35rem 0.75rem; cursor:pointer; transition:all 0.2s; }
-  .btn-logout:hover { border-color:var(--danger); color:var(--danger); }
+  nav{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.5rem;border-bottom:1px solid var(--border);background:rgba(15,22,35,0.95);backdrop-filter:blur(12px);position:sticky;top:0;z-index:100;}
+  .nav-brand{font-size:0.85rem;font-weight:800;font-family:var(--mono);}
+  .nav-brand span{color:#a78bfa;}
+  .btn-logout{font-family:var(--mono);font-size:0.68rem;color:var(--muted);background:none;border:1px solid var(--border);border-radius:6px;padding:0.35rem 0.75rem;cursor:pointer;transition:all 0.2s;}
+  .btn-logout:hover{border-color:var(--danger);color:var(--danger);}
 
-  main { max-width:960px; margin:0 auto; padding:2rem 1rem 4rem; }
+  main{max-width:960px;margin:0 auto;padding:2rem 1rem 4rem;}
 
   /* STATS */
-  .stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:1rem; margin-bottom:2.5rem; }
-  .stat-card {
-    background:var(--surface); border:1px solid var(--border); border-radius:14px;
-    padding:1.25rem; text-align:center;
-  }
-  .stat-card .stat-val { font-size:2rem; font-weight:800; margin-bottom:0.25rem; }
-  .stat-card .stat-label { font-family:var(--mono); font-size:0.65rem; color:var(--muted); letter-spacing:0.08em; text-transform:uppercase; }
-  .stat-card.purple .stat-val { color:#a78bfa; }
-  .stat-card.blue   .stat-val { color:var(--accent); }
-  .stat-card.green  .stat-val { color:var(--success); }
-  .stat-card.orange .stat-val { color:var(--warn); }
+  .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1rem;margin-bottom:2.5rem;}
+  .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.25rem;text-align:center;}
+  .stat-card .stat-val{font-size:2rem;font-weight:800;margin-bottom:0.25rem;}
+  .stat-card .stat-label{font-family:var(--mono);font-size:0.65rem;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;}
+  .stat-card.purple .stat-val{color:#a78bfa;}
+  .stat-card.blue   .stat-val{color:var(--accent);}
+  .stat-card.green  .stat-val{color:var(--success);}
+  .stat-card.orange .stat-val{color:var(--warn);}
 
-  /* TABS navigation */
-  .main-tabs { display:flex; gap:0.5rem; margin-bottom:2rem; flex-wrap:wrap; }
-  .main-tab {
-    padding:0.5rem 1.1rem; border-radius:8px; font-family:var(--mono);
-    font-size:0.72rem; cursor:pointer; border:1px solid var(--border);
-    background:transparent; color:var(--muted); transition:all 0.2s; letter-spacing:0.05em;
-  }
-  .main-tab.active { background:rgba(124,58,237,0.15); border-color:rgba(124,58,237,0.4); color:#a78bfa; }
-  .main-tab:hover:not(.active) { border-color:var(--border); color:var(--text); }
+  /* TABS */
+  .main-tabs{display:flex;gap:0.5rem;margin-bottom:2rem;flex-wrap:wrap;}
+  .main-tab{padding:0.5rem 1.1rem;border-radius:8px;font-family:var(--mono);font-size:0.72rem;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);transition:all 0.2s;letter-spacing:0.05em;}
+  .main-tab.active{background:rgba(124,58,237,0.15);border-color:rgba(124,58,237,0.4);color:#a78bfa;}
+  .tab-pane{display:none;}
+  .tab-pane.active{display:block;}
 
-  .tab-pane { display:none; }
-  .tab-pane.active { display:block; }
+  .section-label{font-family:var(--mono);font-size:0.65rem;letter-spacing:0.12em;text-transform:uppercase;color:#a78bfa;margin-bottom:0.75rem;}
 
-  /* Section label */
-  .section-label { font-family:var(--mono); font-size:0.65rem; letter-spacing:0.12em; text-transform:uppercase; color:#a78bfa; margin-bottom:0.75rem; }
+  /* EXPORT GLOBAL */
+  .export-global{display:flex;gap:0.75rem;margin-bottom:1.25rem;flex-wrap:wrap;align-items:center;}
+  .export-global-label{font-family:var(--mono);font-size:0.65rem;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;}
+  .btn-excel-big{display:inline-flex;align-items:center;gap:0.4rem;padding:0.6rem 1.2rem;border-radius:9px;font-family:var(--sans);font-weight:700;font-size:0.82rem;cursor:pointer;border:none;background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;transition:all 0.2s;}
+  .btn-excel-big:hover{box-shadow:0 4px 14px rgba(22,163,74,0.3);transform:translateY(-1px);}
+  .btn-pdf-big{display:inline-flex;align-items:center;gap:0.4rem;padding:0.6rem 1.2rem;border-radius:9px;font-family:var(--sans);font-weight:700;font-size:0.82rem;cursor:pointer;border:none;background:linear-gradient(135deg,#dc2626,#b91c1c);color:#fff;transition:all 0.2s;}
+  .btn-pdf-big:hover{box-shadow:0 4px 14px rgba(220,38,38,0.3);transform:translateY(-1px);}
 
-  /* Cards */
-  .card { background:var(--surface); border:1px solid var(--border); border-radius:14px; overflow:hidden; margin-bottom:1.25rem; }
-  .card-head { display:flex; justify-content:space-between; align-items:center; padding:0.9rem 1.25rem; border-bottom:1px solid var(--border); flex-wrap:wrap; gap:0.5rem; }
-  .card-head-title { font-size:0.9rem; font-weight:700; }
-  .card-head-sub   { font-family:var(--mono); font-size:0.7rem; color:var(--muted); }
-  .card-stats { display:flex; gap:1.25rem; padding:0.5rem 1.25rem; border-bottom:1px solid var(--border); flex-wrap:wrap; }
-  .c-stat { font-family:var(--mono); font-size:0.68rem; color:var(--muted); }
-  .c-stat strong { color:var(--text); }
+  /* EXPORT PAR SÉANCE */
+  .export-row{display:flex;gap:0.5rem;padding:0.65rem 1.25rem;border-bottom:1px solid var(--border);flex-wrap:wrap;align-items:center;}
+  .export-label{font-family:var(--mono);font-size:0.62rem;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;margin-right:0.25rem;}
+  .btn-excel-sm{padding:0.35rem 0.8rem;border-radius:7px;font-family:var(--mono);font-size:0.68rem;cursor:pointer;border:none;background:rgba(22,163,74,0.15);color:#4ade80;border:1px solid rgba(22,163,74,0.25);transition:all 0.2s;}
+  .btn-excel-sm:hover{background:rgba(22,163,74,0.25);}
+  .btn-pdf-sm{padding:0.35rem 0.8rem;border-radius:7px;font-family:var(--mono);font-size:0.68rem;cursor:pointer;border:none;background:rgba(220,38,38,0.15);color:#f87171;border:1px solid rgba(220,38,38,0.25);transition:all 0.2s;}
+  .btn-pdf-sm:hover{background:rgba(220,38,38,0.25);}
 
-  /* Prof list */
-  .prof-row { display:flex; align-items:center; justify-content:space-between; padding:0.85rem 1.25rem; border-bottom:1px solid rgba(26,37,64,0.5); flex-wrap:wrap; gap:0.5rem; }
-  .prof-row:last-child { border-bottom:none; }
-  .prof-name  { font-weight:700; font-size:0.9rem; margin-bottom:0.15rem; }
-  .prof-email { font-family:var(--mono); font-size:0.68rem; color:var(--muted); }
-  .prof-mat   { font-family:var(--mono); font-size:0.72rem; padding:0.25rem 0.7rem; border-radius:99px; background:rgba(0,212,255,0.08); color:var(--accent); border:1px solid rgba(0,212,255,0.2); }
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:1.25rem;}
+  .card-head{display:flex;justify-content:space-between;align-items:center;padding:0.9rem 1.25rem;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:0.5rem;}
+  .card-head-title{font-size:0.9rem;font-weight:700;}
+  .card-head-sub{font-family:var(--mono);font-size:0.7rem;color:var(--muted);}
 
-  /* Présences profs */
-  .pp-row { display:flex; align-items:center; justify-content:space-between; padding:0.75rem 1.25rem; border-bottom:1px solid rgba(26,37,64,0.5); flex-wrap:wrap; gap:0.5rem; }
-  .pp-row:last-child { border-bottom:none; }
-  .pp-nom  { font-weight:600; font-size:0.85rem; }
-  .pp-info { font-family:var(--mono); font-size:0.68rem; color:var(--muted); }
-  .pp-heure { font-family:var(--mono); font-size:0.7rem; padding:0.2rem 0.65rem; border-radius:99px; background:rgba(16,185,129,0.1); color:var(--success); border:1px solid rgba(16,185,129,0.2); }
+  .prof-row{display:flex;align-items:center;justify-content:space-between;padding:0.85rem 1.25rem;border-bottom:1px solid rgba(26,37,64,0.5);flex-wrap:wrap;gap:0.5rem;}
+  .prof-row:last-child{border-bottom:none;}
+  .prof-name{font-weight:700;font-size:0.9rem;margin-bottom:0.15rem;}
+  .prof-email{font-family:var(--mono);font-size:0.68rem;color:var(--muted);}
+  .prof-mat{font-family:var(--mono);font-size:0.72rem;padding:0.25rem 0.7rem;border-radius:99px;background:rgba(0,212,255,0.08);color:var(--accent);border:1px solid rgba(0,212,255,0.2);}
 
-  /* Table */
-  .table-wrap { overflow-x:auto; }
-  table { width:100%; border-collapse:collapse; }
-  th { font-family:var(--mono); font-size:0.6rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); padding:0.65rem 1.25rem; text-align:left; border-bottom:1px solid var(--border); }
-  td { font-family:var(--mono); font-size:0.78rem; padding:0.65rem 1.25rem; border-top:1px solid rgba(26,37,64,0.4); }
-  tr:hover td { background:rgba(124,58,237,0.02); }
+  .pp-row{display:flex;align-items:center;justify-content:space-between;padding:0.75rem 1.25rem;border-bottom:1px solid rgba(26,37,64,0.5);flex-wrap:wrap;gap:0.5rem;}
+  .pp-row:last-child{border-bottom:none;}
+  .pp-nom{font-weight:600;font-size:0.85rem;}
+  .pp-info{font-family:var(--mono);font-size:0.68rem;color:var(--muted);}
+  .pp-heure{font-family:var(--mono);font-size:0.7rem;padding:0.2rem 0.65rem;border-radius:99px;background:rgba(16,185,129,0.1);color:var(--success);border:1px solid rgba(16,185,129,0.2);}
 
-  .badge { display:inline-flex; align-items:center; gap:0.3rem; padding:0.22rem 0.65rem; border-radius:99px; font-family:var(--mono); font-size:0.65rem; }
-  .badge-ok     { background:rgba(16,185,129,0.1); color:var(--success); border:1px solid rgba(16,185,129,0.25); }
-  .badge-absent { background:rgba(239,68,68,0.08); color:var(--danger);  border:1px solid rgba(239,68,68,0.2); }
+  .table-wrap{overflow-x:auto;}
+  table{width:100%;border-collapse:collapse;}
+  th{font-family:var(--mono);font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);padding:0.65rem 1.25rem;text-align:left;border-bottom:1px solid var(--border);}
+  td{font-family:var(--mono);font-size:0.78rem;padding:0.65rem 1.25rem;border-top:1px solid rgba(26,37,64,0.4);}
+  tr:hover td{background:rgba(124,58,237,0.02);}
 
-  /* Filter */
-  .filter-row { display:flex; gap:0.75rem; margin-bottom:1rem; flex-wrap:wrap; }
-  .filter-input {
-    background:var(--surface); border:1px solid var(--border); border-radius:8px;
-    color:var(--text); font-family:var(--mono); font-size:0.78rem;
-    padding:0.55rem 0.85rem; outline:none; flex:1; min-width:180px;
-  }
-  .filter-input:focus { border-color:var(--purple); }
+  .badge{display:inline-flex;align-items:center;gap:0.3rem;padding:0.22rem 0.65rem;border-radius:99px;font-family:var(--mono);font-size:0.65rem;}
+  .badge-ok    {background:rgba(16,185,129,0.1);color:var(--success);border:1px solid rgba(16,185,129,0.25);}
+  .badge-absent{background:rgba(239,68,68,0.08);color:var(--danger);border:1px solid rgba(239,68,68,0.2);}
 
-  #loading { text-align:center; font-family:var(--mono); font-size:0.78rem; color:var(--muted); padding:2.5rem; }
+  .filter-row{display:flex;gap:0.75rem;margin-bottom:1rem;flex-wrap:wrap;}
+  .filter-input{background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--mono);font-size:0.78rem;padding:0.55rem 0.85rem;outline:none;flex:1;min-width:180px;}
+  .filter-input:focus{border-color:var(--purple);}
+
+  #loading{text-align:center;font-family:var(--mono);font-size:0.78rem;color:var(--muted);padding:2.5rem;}
+
+  /* Toast */
+  #toast{position:fixed;bottom:1.5rem;right:1.5rem;padding:0.85rem 1.25rem;border-radius:10px;font-family:var(--mono);font-size:0.8rem;opacity:0;transform:translateY(12px);transition:all 0.25s;z-index:999;max-width:300px;}
+  #toast.show{opacity:1;transform:translateY(0);}
+  #toast.ok {background:rgba(16,185,129,0.92);color:#fff;}
+  #toast.err{background:rgba(239,68,68,0.92);color:#fff;}
 </style>
 </head>
 <body>
@@ -115,24 +110,30 @@
 </nav>
 
 <main>
-  <!-- Stats -->
+  <!-- STATS -->
   <div class="stats-grid" id="stats-grid">
     <div class="stat-card purple"><div class="stat-val" id="s-profs">—</div><div class="stat-label">Professeurs</div></div>
     <div class="stat-card blue">  <div class="stat-val" id="s-seances">—</div><div class="stat-label">Séances</div></div>
     <div class="stat-card green"> <div class="stat-val" id="s-pp">—</div><div class="stat-label">Pointages Profs</div></div>
     <div class="stat-card orange"><div class="stat-val" id="s-presS1">—</div><div class="stat-label">Présences S1</div></div>
     <div class="stat-card green"> <div class="stat-val" id="s-presS2">—</div><div class="stat-label">Présences S2</div></div>
+    <div class="stat-card blue">  <div class="stat-val" id="s-emails">—</div><div class="stat-label">Emails envoyés</div></div>
   </div>
 
-  <!-- Onglets -->
+  <!-- ONGLETS -->
   <div class="main-tabs">
-    <button class="main-tab active" onclick="showTab('profs')">👨‍🏫 Professeurs inscrits</button>
+    <button class="main-tab active" onclick="showTab('profs')">👨‍🏫 Professeurs</button>
     <button class="main-tab"        onclick="showTab('pointages')">📍 Pointages Profs</button>
     <button class="main-tab"        onclick="showTab('seances')">📋 Séances Étudiants</button>
   </div>
 
   <!-- TAB 1 : Professeurs -->
   <div class="tab-pane active" id="tab-profs">
+    <div class="export-global">
+      <span class="export-global-label">📥 Exporter tout :</span>
+      <button class="btn-excel-big" onclick="exporterProfsExcel()">📊 Excel</button>
+      <button class="btn-pdf-big"   onclick="exporterProfsPDF()">📄 PDF</button>
+    </div>
     <p class="section-label">Liste des professeurs enregistrés</p>
     <div id="loading-profs" class="card" style="padding:2rem;text-align:center;font-family:var(--mono);font-size:0.78rem;color:var(--muted);">⏳ Chargement…</div>
     <div id="list-profs"></div>
@@ -140,6 +141,11 @@
 
   <!-- TAB 2 : Pointages Profs -->
   <div class="tab-pane" id="tab-pointages">
+    <div class="export-global">
+      <span class="export-global-label">📥 Exporter tout :</span>
+      <button class="btn-excel-big" onclick="exporterPointagesExcel()">📊 Excel</button>
+      <button class="btn-pdf-big"   onclick="exporterPointagesPDF()">📄 PDF</button>
+    </div>
     <p class="section-label">Historique des pointages des professeurs</p>
     <div class="filter-row">
       <input class="filter-input" id="filter-pp" placeholder="🔍 Filtrer par nom ou matière…" oninput="filtrerPointages()" />
@@ -150,6 +156,11 @@
 
   <!-- TAB 3 : Séances étudiants -->
   <div class="tab-pane" id="tab-seances">
+    <div class="export-global">
+      <span class="export-global-label">📥 Exporter tout :</span>
+      <button class="btn-excel-big" onclick="exporterToutesSeancesExcel()">📊 Excel complet</button>
+      <button class="btn-pdf-big"   onclick="exporterToutesSeancesPDF()">📄 PDF complet</button>
+    </div>
     <p class="section-label">Toutes les séances — tous les professeurs</p>
     <div class="filter-row">
       <input class="filter-input" id="filter-seances" placeholder="🔍 Filtrer par matière ou professeur…" oninput="filtrerSeances()" />
@@ -157,73 +168,66 @@
     <div id="loading-seances" class="card" style="padding:2rem;text-align:center;font-family:var(--mono);font-size:0.78rem;color:var(--muted);">⏳ Chargement…</div>
     <div id="list-seances"></div>
   </div>
-
 </main>
+
+<div id="toast"></div>
 
 <script>
   const token = localStorage.getItem('admin_token');
   if (!token) window.location.href = '/login-admin.html';
 
-  function logout() {
-    localStorage.removeItem('admin_token');
-    window.location.href = '/';
-  }
+  let allPointages = [], allSeances = [], allProfs = [];
 
-  function authHeaders() {
-    return { 'Content-Type':'application/json', 'Authorization': `Bearer ${token}` };
+  function logout() { localStorage.removeItem('admin_token'); window.location.href = '/'; }
+  function authHeaders() { return {'Content-Type':'application/json','Authorization':`Bearer ${token}`}; }
+
+  function toast(msg, type='ok') {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.className = `show ${type}`;
+    setTimeout(() => { t.className = ''; }, 3500);
   }
 
   function showTab(name) {
-    document.querySelectorAll('.main-tab').forEach((el,i)=>el.classList.toggle('active',(['profs','pointages','seances'][i])===name));
-    document.querySelectorAll('.tab-pane').forEach(el=>el.classList.remove('active'));
+    document.querySelectorAll('.main-tab').forEach((el,i) => el.classList.toggle('active',(['profs','pointages','seances'][i])===name));
+    document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
     document.getElementById(`tab-${name}`).classList.add('active');
   }
 
-  // ── Charger stats
+  // ── Stats
   async function chargerStats() {
     try {
-      const res  = await fetch('/admin/stats',{headers:authHeaders()});
+      const res = await fetch('/admin/stats',{headers:authHeaders()});
       if(res.status===401||res.status===403){logout();return;}
-      const d    = await res.json();
-      document.getElementById('s-profs').textContent  = d.nbProfs;
-      document.getElementById('s-seances').textContent= d.nbSeances;
-      document.getElementById('s-pp').textContent     = d.nbPresencesProfs;
-      document.getElementById('s-presS1').textContent = d.totalPresentsS1;
-      document.getElementById('s-presS2').textContent = d.totalPresentsS2;
+      const d = await res.json();
+      document.getElementById('s-profs').textContent   = d.nbProfs;
+      document.getElementById('s-seances').textContent = d.nbSeances;
+      document.getElementById('s-pp').textContent      = d.nbPresencesProfs;
+      document.getElementById('s-presS1').textContent  = d.totalPresentsS1;
+      document.getElementById('s-presS2').textContent  = d.totalPresentsS2;
+      document.getElementById('s-emails').textContent  = d.totalEmails || 0;
     } catch {}
   }
 
-  // ── Charger professeurs
+  // ── Profs
   async function chargerProfs() {
     try {
-      const res   = await fetch('/admin/profs',{headers:authHeaders()});
-      const profs = await res.json();
+      const res = await fetch('/admin/profs',{headers:authHeaders()});
+      allProfs  = await res.json();
       document.getElementById('loading-profs').style.display='none';
-      const cont  = document.getElementById('list-profs');
-
-      if(!profs||profs.length===0){
-        cont.innerHTML='<div class="card" style="padding:1.5rem;text-align:center;font-family:var(--mono);font-size:0.78rem;color:var(--muted);">Aucun professeur inscrit.</div>';
-        return;
-      }
-
+      const cont = document.getElementById('list-profs');
+      if(!allProfs||allProfs.length===0){cont.innerHTML='<div class="card" style="padding:1.5rem;text-align:center;font-family:var(--mono);font-size:0.78rem;color:var(--muted);">Aucun professeur inscrit.</div>';return;}
       const card=document.createElement('div'); card.className='card';
-      profs.forEach(p=>{
+      allProfs.forEach(p=>{
         const row=document.createElement('div'); row.className='prof-row';
-        const dateInscription = p.createdAt ? new Date(p.createdAt).toLocaleDateString('fr-FR') : '—';
-        row.innerHTML=`
-          <div>
-            <div class="prof-name">${p.nom}</div>
-            <div class="prof-email">${p.email} · Inscrit le ${dateInscription}</div>
-          </div>
-          <span class="prof-mat">${p.matiere}</span>`;
+        const date = p.createdAt ? new Date(p.createdAt).toLocaleDateString('fr-FR') : '—';
+        row.innerHTML=`<div><div class="prof-name">${p.nom}</div><div class="prof-email">${p.email} · Inscrit le ${date}</div></div><span class="prof-mat">${p.matiere}</span>`;
         card.appendChild(row);
       });
       cont.appendChild(card);
     } catch { document.getElementById('loading-profs').textContent='❌ Erreur.'; }
   }
 
-  // ── Charger pointages profs
-  let allPointages = [];
+  // ── Pointages
   async function chargerPointages() {
     try {
       const res  = await fetch('/admin/presences-profs',{headers:authHeaders()});
@@ -236,19 +240,11 @@
   function afficherPointages(data) {
     const cont = document.getElementById('list-pp');
     cont.innerHTML='';
-    if(!data||data.length===0){
-      cont.innerHTML='<div class="card" style="padding:1.5rem;text-align:center;font-family:var(--mono);font-size:0.78rem;color:var(--muted);">Aucun pointage enregistré.</div>';
-      return;
-    }
+    if(!data||data.length===0){cont.innerHTML='<div class="card" style="padding:1.5rem;text-align:center;font-family:var(--mono);font-size:0.78rem;color:var(--muted);">Aucun pointage.</div>';return;}
     const card=document.createElement('div'); card.className='card';
     data.forEach(p=>{
       const row=document.createElement('div'); row.className='pp-row';
-      row.innerHTML=`
-        <div>
-          <div class="pp-nom">${p.nom}</div>
-          <div class="pp-info">${p.email} · ${p.matiere} · 📅 ${p.date}</div>
-        </div>
-        <span class="pp-heure">✓ ${p.heure}</span>`;
+      row.innerHTML=`<div><div class="pp-nom">${p.nom}</div><div class="pp-info">${p.email} · ${p.matiere} · 📅 ${p.date}</div></div><span class="pp-heure">✓ ${p.heure}</span>`;
       card.appendChild(row);
     });
     cont.appendChild(card);
@@ -256,16 +252,13 @@
 
   function filtrerPointages() {
     const q = document.getElementById('filter-pp').value.toLowerCase();
-    afficherPointages(allPointages.filter(p=>
-      p.nom.toLowerCase().includes(q) || p.matiere.toLowerCase().includes(q) || p.email.toLowerCase().includes(q)
-    ));
+    afficherPointages(allPointages.filter(p=>p.nom.toLowerCase().includes(q)||p.matiere.toLowerCase().includes(q)||p.email.toLowerCase().includes(q)));
   }
 
-  // ── Charger séances étudiants
-  let allSeances = [];
+  // ── Séances
   async function chargerSeances() {
     try {
-      const res  = await fetch('/admin/seances',{headers:authHeaders()});
+      const res = await fetch('/admin/seances',{headers:authHeaders()});
       allSeances = await res.json();
       document.getElementById('loading-seances').style.display='none';
       afficherSeances(allSeances);
@@ -275,34 +268,33 @@
   function afficherSeances(data) {
     const cont = document.getElementById('list-seances');
     cont.innerHTML='';
-    if(!data||data.length===0){
-      cont.innerHTML='<div class="card" style="padding:1.5rem;text-align:center;font-family:var(--mono);font-size:0.78rem;color:var(--muted);">Aucune séance enregistrée.</div>';
-      return;
-    }
-    data.forEach(s=>{
-      const etudiants=s.etudiants||[];
-      const pS1=etudiants.filter(e=>e.s1==="Present").length;
-      const pS2=etudiants.filter(e=>e.s2==="Present").length;
+    if(!data||data.length===0){cont.innerHTML='<div class="card" style="padding:1.5rem;text-align:center;font-family:var(--mono);font-size:0.78rem;color:var(--muted);">Aucune séance.</div>';return;}
+    data.forEach((s, idx)=>{
+      const etu=s.etudiants||[];
+      const pS1=etu.filter(e=>e.s1==="Present").length;
+      const pS2=etu.filter(e=>e.s2==="Present").length;
       let dateAff=s.date;
       try{dateAff=new Date(s.date+'T00:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});}catch{}
-
-      const lignes=etudiants.map(e=>{
+      const lignes=etu.map(e=>{
         const cs1=e.s1==="Present"?'badge-ok':'badge-absent';
         const cs2=e.s2==="Present"?'badge-ok':'badge-absent';
         return `<tr><td>${e.nom}</td><td><span class="badge ${cs1}">${e.s1==="Present"?'✓':''} ${e.s1}</span></td><td><span class="badge ${cs2}">${e.s2==="Present"?'✓':''} ${e.s2}</span></td></tr>`;
       }).join('');
 
+      const realIdx = allSeances.indexOf(s);
       const card=document.createElement('div'); card.className='card';
       card.innerHTML=`
         <div class="card-head">
-          <div>
-            <div class="card-head-title">${s.matiere}</div>
-            <div class="card-head-sub">Prof : ${s.profNom||'—'} · ${dateAff}</div>
-          </div>
+          <div><div class="card-head-title">${s.matiere}</div><div class="card-head-sub">Prof : ${s.profNom||'—'} · ${dateAff}</div></div>
           <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
-            <span style="font-family:var(--mono);font-size:0.68rem;color:var(--success);">S1: ${pS1}/${etudiants.length}</span>
-            <span style="font-family:var(--mono);font-size:0.68rem;color:var(--accent);">S2: ${pS2}/${etudiants.length}</span>
+            <span style="font-family:var(--mono);font-size:0.68rem;color:var(--success);">S1: ${pS1}/${etu.length}</span>
+            <span style="font-family:var(--mono);font-size:0.68rem;color:var(--accent);">S2: ${pS2}/${etu.length}</span>
           </div>
+        </div>
+        <div class="export-row">
+          <span class="export-label">📥 Exporter :</span>
+          <button class="btn-excel-sm" onclick="exporterSeanceExcel(allSeances[${realIdx}])">📊 Excel</button>
+          <button class="btn-pdf-sm"   onclick="exporterSeancePDF(allSeances[${realIdx}])">📄 PDF</button>
         </div>
         <div class="table-wrap">
           <table><thead><tr><th>Nom</th><th>Séance 1</th><th>Séance 2</th></tr></thead>
@@ -314,9 +306,169 @@
 
   function filtrerSeances() {
     const q = document.getElementById('filter-seances').value.toLowerCase();
-    afficherSeances(allSeances.filter(s=>
-      s.matiere.toLowerCase().includes(q) || (s.profNom||'').toLowerCase().includes(q)
-    ));
+    afficherSeances(allSeances.filter(s=>s.matiere.toLowerCase().includes(q)||(s.profNom||'').toLowerCase().includes(q)));
+  }
+
+  // ══════════════════════════════════════════
+  //  EXPORTS EXCEL
+  // ══════════════════════════════════════════
+
+  function exporterProfsExcel() {
+    const wb = XLSX.utils.book_new();
+    const data = [['Nom','Email','Matière','Date inscription']];
+    allProfs.forEach(p => data.push([p.nom, p.email, p.matiere, p.createdAt ? new Date(p.createdAt).toLocaleDateString('fr-FR') : '—']));
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    ws['!cols'] = [{wch:25},{wch:35},{wch:20},{wch:20}];
+    XLSX.utils.book_append_sheet(wb, ws, 'Professeurs');
+    XLSX.writeFile(wb, `profs_ept_${new Date().toISOString().split('T')[0]}.xlsx`);
+    toast('✅ Excel professeurs téléchargé !');
+  }
+
+  function exporterPointagesExcel() {
+    const wb = XLSX.utils.book_new();
+    const data = [['Nom','Email','Matière','Date','Heure']];
+    allPointages.forEach(p => data.push([p.nom, p.email, p.matiere, p.date, p.heure]));
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    ws['!cols'] = [{wch:25},{wch:35},{wch:20},{wch:15},{wch:12}];
+    XLSX.utils.book_append_sheet(wb, ws, 'Pointages');
+    XLSX.writeFile(wb, `pointages_profs_${new Date().toISOString().split('T')[0]}.xlsx`);
+    toast('✅ Excel pointages téléchargé !');
+  }
+
+  function exporterSeanceExcel(s) {
+    const wb = XLSX.utils.book_new();
+    const data = [
+      ['EPT — Présence'],
+      [`Matière : ${s.matiere}`],
+      [`Date : ${s.date}`],
+      [`Professeur : ${s.profNom||'—'}`],
+      [],
+      ['N°','Nom','Séance 1','Séance 2']
+    ];
+    (s.etudiants||[]).forEach((e,i) => data.push([i+1, e.nom, e.s1, e.s2]));
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    ws['!cols'] = [{wch:5},{wch:30},{wch:15},{wch:15}];
+    XLSX.utils.book_append_sheet(wb, ws, 'Présence');
+    XLSX.writeFile(wb, `presence_${s.matiere}_${s.date}.xlsx`);
+    toast('✅ Excel téléchargé !');
+  }
+
+  function exporterToutesSeancesExcel() {
+    const wb = XLSX.utils.book_new();
+    allSeances.forEach(s => {
+      const data = [['N°','Nom','Séance 1','Séance 2']];
+      (s.etudiants||[]).forEach((e,i) => data.push([i+1, e.nom, e.s1, e.s2]));
+      const ws = XLSX.utils.aoa_to_sheet(data);
+      ws['!cols'] = [{wch:5},{wch:30},{wch:15},{wch:15}];
+      const sheetName = `${s.matiere}_${s.date}`.substring(0,31);
+      XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    });
+    XLSX.writeFile(wb, `toutes_seances_${new Date().toISOString().split('T')[0]}.xlsx`);
+    toast('✅ Excel complet téléchargé !');
+  }
+
+  // ══════════════════════════════════════════
+  //  EXPORTS PDF
+  // ══════════════════════════════════════════
+
+  function exporterProfsPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    doc.setFillColor(7,9,15); doc.rect(0,0,210,35,'F');
+    doc.setTextColor(124,58,237); doc.setFontSize(16); doc.setFont('helvetica','bold');
+    doc.text('EPT — Liste des Professeurs', 105, 16, {align:'center'});
+    doc.setTextColor(100,116,139); doc.setFontSize(9); doc.setFont('helvetica','normal');
+    doc.text(`Généré le ${new Date().toLocaleString('fr-FR')}`, 105, 26, {align:'center'});
+    doc.autoTable({
+      startY: 40,
+      head: [['Nom','Email','Matière','Inscription']],
+      body: allProfs.map(p => [p.nom, p.email, p.matiere, p.createdAt?new Date(p.createdAt).toLocaleDateString('fr-FR'):'—']),
+      theme: 'grid',
+      headStyles: {fillColor:[7,9,15],textColor:[124,58,237],fontStyle:'bold',fontSize:9},
+      bodyStyles: {fillColor:[15,22,35],textColor:[226,232,240],fontSize:8,lineColor:[26,37,64]},
+      alternateRowStyles: {fillColor:[11,16,26]}
+    });
+    doc.save(`profs_ept_${new Date().toISOString().split('T')[0]}.pdf`);
+    toast('✅ PDF professeurs téléchargé !');
+  }
+
+  function exporterPointagesPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    doc.setFillColor(7,9,15); doc.rect(0,0,210,35,'F');
+    doc.setTextColor(0,212,255); doc.setFontSize(16); doc.setFont('helvetica','bold');
+    doc.text('EPT — Pointages des Professeurs', 105, 16, {align:'center'});
+    doc.setTextColor(100,116,139); doc.setFontSize(9); doc.setFont('helvetica','normal');
+    doc.text(`Généré le ${new Date().toLocaleString('fr-FR')}`, 105, 26, {align:'center'});
+    doc.autoTable({
+      startY: 40,
+      head: [['Nom','Matière','Date','Heure']],
+      body: allPointages.map(p => [p.nom, p.matiere, p.date, p.heure]),
+      theme: 'grid',
+      headStyles: {fillColor:[7,9,15],textColor:[0,212,255],fontStyle:'bold',fontSize:9},
+      bodyStyles: {fillColor:[15,22,35],textColor:[226,232,240],fontSize:8,lineColor:[26,37,64]},
+      alternateRowStyles: {fillColor:[11,16,26]}
+    });
+    doc.save(`pointages_profs_${new Date().toISOString().split('T')[0]}.pdf`);
+    toast('✅ PDF pointages téléchargé !');
+  }
+
+  function exporterSeancePDF(s) {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    doc.setFillColor(7,9,15); doc.rect(0,0,210,40,'F');
+    doc.setTextColor(0,212,255); doc.setFontSize(16); doc.setFont('helvetica','bold');
+    doc.text('EPT — Liste de Présence', 105, 15, {align:'center'});
+    doc.setTextColor(226,232,240); doc.setFontSize(10);
+    doc.text(`${s.matiere} · ${s.date} · Prof: ${s.profNom||'—'}`, 105, 27, {align:'center'});
+    doc.setTextColor(100,116,139); doc.setFontSize(8);
+    doc.text(`Généré le ${new Date().toLocaleString('fr-FR')}`, 105, 35, {align:'center'});
+    const rows = (s.etudiants||[]).map((e,i) => [i+1, e.nom, e.s1==="Present"?"✓ Présent":"✗ Absent", e.s2==="Present"?"✓ Présent":"✗ Absent"]);
+    doc.autoTable({
+      startY: 45,
+      head: [['N°','Nom','Séance 1','Séance 2']],
+      body: rows,
+      theme: 'grid',
+      headStyles: {fillColor:[7,9,15],textColor:[0,212,255],fontStyle:'bold',fontSize:9,halign:'center'},
+      bodyStyles: {fillColor:[15,22,35],textColor:[226,232,240],fontSize:9,lineColor:[26,37,64]},
+      alternateRowStyles: {fillColor:[11,16,26]},
+      columnStyles: {0:{halign:'center',cellWidth:12},2:{halign:'center'},3:{halign:'center'}},
+      didParseCell:(data)=>{
+        if(data.section==='body'&&(data.column.index===2||data.column.index===3)){
+          if(data.cell.raw?.includes('Présent')) data.cell.styles.textColor=[16,185,129];
+          else if(data.cell.raw?.includes('Absent')) data.cell.styles.textColor=[239,68,68];
+        }
+      }
+    });
+    doc.save(`presence_${s.matiere}_${s.date}.pdf`);
+    toast('✅ PDF téléchargé !');
+  }
+
+  function exporterToutesSeancesPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    let first = true;
+    allSeances.forEach(s => {
+      if (!first) doc.addPage();
+      first = false;
+      doc.setFillColor(7,9,15); doc.rect(0,0,210,35,'F');
+      doc.setTextColor(0,212,255); doc.setFontSize(14); doc.setFont('helvetica','bold');
+      doc.text(`${s.matiere} — ${s.date}`, 105, 15, {align:'center'});
+      doc.setTextColor(100,116,139); doc.setFontSize(9); doc.setFont('helvetica','normal');
+      doc.text(`Prof: ${s.profNom||'—'} · Généré le ${new Date().toLocaleString('fr-FR')}`, 105, 26, {align:'center'});
+      const rows = (s.etudiants||[]).map((e,i) => [i+1, e.nom, e.s1==="Present"?"✓":"✗", e.s2==="Present"?"✓":"✗"]);
+      doc.autoTable({
+        startY: 40,
+        head: [['N°','Nom','S1','S2']],
+        body: rows,
+        theme: 'grid',
+        headStyles: {fillColor:[7,9,15],textColor:[0,212,255],fontStyle:'bold',fontSize:9},
+        bodyStyles: {fillColor:[15,22,35],textColor:[226,232,240],fontSize:8,lineColor:[26,37,64]},
+        alternateRowStyles: {fillColor:[11,16,26]}
+      });
+    });
+    doc.save(`toutes_seances_${new Date().toISOString().split('T')[0]}.pdf`);
+    toast('✅ PDF complet téléchargé !');
   }
 
   // ── Init
