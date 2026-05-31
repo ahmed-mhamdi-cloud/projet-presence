@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Statistiques Admin — EPT</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap');
+  :root {
+    --bg:#07090f; --surface:#0f1623; --border:#1a2540;
+    --accent:#00d4ff; --purple:#7c3aed; --success:#10b981;
+    --danger:#ef4444; --warn:#f59e0b; --text:#e2e8f0; --muted:#64748b;
+    --mono:'Space Mono',monospace; --sans:'Syne',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;
+    background-image:radial-gradient(ellipse at 80% 0%,rgba(124,58,237,0.07) 0%,transparent 55%);}
+
+  nav{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.5rem;
+    border-bottom:1px solid var(--border);background:rgba(15,22,35,0.95);backdrop-filter:blur(12px);
+    position:sticky;top:0;z-index:100;}
+  .nav-brand{font-size:0.85rem;font-weight:800;font-family:var(--mono);}
+  .nav-brand span{color:#a78bfa;}
+  .nav-back{font-family:var(--mono);font-size:0.7rem;color:var(--muted);text-decoration:none;
+    border:1px solid var(--border);border-radius:6px;padding:0.35rem 0.75rem;transition:all 0.2s;}
+  .nav-back:hover{border-color:#a78bfa;color:#a78bfa;}
+
+  main{max-width:960px;margin:0 auto;padding:2rem 1rem 4rem;}
+
+  .page-header{margin-bottom:2rem;}
+  .page-header h1{font-size:1.6rem;font-weight:800;letter-spacing:-0.03em;
+    background:linear-gradient(135deg,#a78bfa,var(--purple));
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+  .page-header p{font-family:var(--mono);font-size:0.72rem;color:var(--muted);margin-top:0.4rem;letter-spacing:0.06em;}
+
+  .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1rem;margin-bottom:2rem;}
+  .kpi{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.25rem;text-align:center;position:relative;overflow:hidden;}
+  .kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:14px 14px 0 0;}
+  .kpi.blue::before{background:var(--accent);}
+  .kpi.green::before{background:var(--success);}
+  .kpi.red::before{background:var(--danger);}
+  .kpi.purple::before{background:var(--purple);}
+  .kpi.orange::before{background:var(--warn);}
+  .kpi-val{font-size:2rem;font-weight:800;margin-bottom:0.25rem;}
+  .kpi.blue   .kpi-val{color:var(--accent);}
+  .kpi.green  .kpi-val{color:var(--success);}
+  .kpi.red    .kpi-val{color:var(--danger);}
+  .kpi.purple .kpi-val{color:#a78bfa;}
+  .kpi.orange .kpi-val{color:var(--warn);}
+  .kpi-label{font-family:var(--mono);font-size:0.62rem;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;}
+
+  .charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem;}
+  .chart-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:1.5rem;}
+  .chart-card.full{grid-column:1/-1;}
+  .chart-title{font-family:var(--mono);font-size:0.68rem;letter-spacing:0.1em;text-transform:uppercase;
+    color:#a78bfa;margin-bottom:1.25rem;padding-bottom:0.75rem;border-bottom:1px solid var(--border);}
+  .chart-wrap{position:relative;height:240px;}
+  .chart-wrap.tall{height:300px;}
+
+  .risk-table{width:100%;border-collapse:collapse;}
+  .risk-table th{font-family:var(--mono);font-size:0.62rem;letter-spacing:0.1em;text-transform:uppercase;
+    color:var(--muted);padding:0.6rem 1.25rem;text-align:left;border-bottom:1px solid var(--border);}
+  .risk-table td{font-family:var(--mono);font-size:0.78rem;padding:0.65rem 1.25rem;
+    border-top:1px solid rgba(26,37,64,0.5);}
+  .risk-table tr:hover td{background:rgba(124,58,237,0.02);}
+
+  .taux-bar{height:8px;border-radius:4px;background:var(--border);overflow:hidden;margin-top:4px;}
+  .taux-fill{height:100%;border-radius:4px;transition:width 0.6s ease;}
+
+  .badge{display:inline-flex;align-items:center;gap:0.3rem;padding:0.2rem 0.6rem;
+    border-radius:99px;font-family:var(--mono);font-size:0.65rem;}
+  .badge-ok  {background:rgba(16,185,129,0.1);color:var(--success);border:1px solid rgba(16,185,129,0.25);}
+  .badge-warn{background:rgba(245,158,11,0.1);color:var(--warn);border:1px solid rgba(245,158,11,0.25);}
+  .badge-risk{background:rgba(239,68,68,0.1);color:var(--danger);border:1px solid rgba(239,68,68,0.25);}
+
+  #loading{text-align:center;font-family:var(--mono);font-size:0.78rem;color:var(--muted);padding:4rem;}
+  #content{display:none;}
+
+  @media(max-width:600px){
+    .charts-grid{grid-template-columns:1fr;}
+    .chart-card.full{grid-column:auto;}
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand">🛡 <span>Admin</span> — Statistiques</div>
+  <a href="/admin.html" class="nav-back">← Dashboard</a>
+</nav>
+
+<main>
+  <div id="loading">⏳ Chargement des statistiques…</div>
+
+  <div id="content">
+    <div class="page-header">
+      <h1>Statistiques globales</h1>
+      <p>TOUTES LES MATIÈRES · TOUS LES PROFESSEURS</p>
+    </div>
+
+    <!-- KPI -->
+    <div class="kpi-grid">
+      <div class="kpi purple"><div class="kpi-val" id="kpi-profs">0</div><div class="kpi-label">Professeurs</div></div>
+      <div class="kpi blue">  <div class="kpi-val" id="kpi-seances">0</div><div class="kpi-label">Séances</div></div>
+      <div class="kpi green"> <div class="kpi-val" id="kpi-taux-global">0%</div><div class="kpi-label">Taux global</div></div>
+      <div class="kpi green"> <div class="kpi-val" id="kpi-pp">0</div><div class="kpi-label">Pointages profs</div></div>
+      <div class="kpi red">   <div class="kpi-val" id="kpi-risque">0</div><div class="kpi-label">Étudiants à risque</div></div>
+      <div class="kpi orange"><div class="kpi-val" id="kpi-emails">0</div><div class="kpi-label">Emails envoyés</div></div>
+    </div>
+
+    <!-- CHARTS -->
+    <div class="charts-grid">
+
+      <!-- Présence globale pie -->
+      <div class="chart-card">
+        <div class="chart-title">🌍 Présence globale</div>
+        <div class="chart-wrap">
+          <canvas id="chartGlobal"></canvas>
+        </div>
+      </div>
+
+      <!-- Par matière bar -->
+      <div class="chart-card">
+        <div class="chart-title">📚 Taux de présence par matière</div>
+        <div class="chart-wrap">
+          <canvas id="chartMatieres"></canvas>
+        </div>
+      </div>
+
+      <!-- Évolution globale -->
+      <div class="chart-card full">
+        <div class="chart-title">📈 Évolution globale de présence</div>
+        <div class="chart-wrap tall">
+          <canvas id="chartEvolution"></canvas>
+        </div>
+      </div>
+
+      <!-- Par professeur -->
+      <div class="chart-card full">
+        <div class="chart-title">👨‍🏫 Taux de présence par professeur</div>
+        <div class="chart-wrap">
+          <canvas id="chartProfs"></canvas>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ÉTUDIANTS À RISQUE GLOBAL -->
+    <div class="chart-card">
+      <div class="chart-title">⚠️ Étudiants à risque — Taux global inférieur à 70%</div>
+      <div id="risque-content"></div>
+    </div>
+
+  </div>
+</main>
+
+<script>
+  const token = localStorage.getItem('admin_token');
+  if (!token) window.location.href = '/login-admin.html';
+
+  Chart.defaults.color = '#64748b';
+  Chart.defaults.borderColor = 'rgba(30,45,69,0.6)';
+
+  const PALETTE = [
+    'rgba(0,212,255,0.8)', 'rgba(124,58,237,0.8)', 'rgba(16,185,129,0.8)',
+    'rgba(245,158,11,0.8)', 'rgba(239,68,68,0.8)', 'rgba(59,130,246,0.8)',
+    'rgba(236,72,153,0.8)', 'rgba(34,197,94,0.8)'
+  ];
+
+  async function chargerStats() {
+    try {
+      const headers = { 'Authorization': `Bearer ${token}` };
+
+      const [resSeances, resProfs, resStats, resPointages] = await Promise.all([
+        fetch('/admin/seances', { headers }),
+        fetch('/admin/profs', { headers }),
+        fetch('/admin/stats', { headers }),
+        fetch('/admin/presences-profs', { headers })
+      ]);
+
+      const seances   = await resSeances.json();
+      const profs     = await resProfs.json();
+      const statsGlob = await resStats.json();
+      const pointages = await resPointages.json();
+
+      document.getElementById('loading').style.display  = 'none';
+      document.getElementById('content').style.display  = 'block';
+
+      // ── KPI
+      const totalPresents = statsGlob.totalPresentsS1 + statsGlob.totalPresentsS2;
+      const totalEntries  = statsGlob.totalEtudiants * 2 * seances.length;
+      const tauxGlobal    = totalEntries > 0 ? Math.round((totalPresents / (statsGlob.totalEtudiants * seances.length * 2 || 1)) * 100) : 0;
+
+      document.getElementById('kpi-profs').textContent   = statsGlob.nbProfs;
+      document.getElementById('kpi-seances').textContent = statsGlob.nbSeances;
+      document.getElementById('kpi-taux-global').textContent = `${statsGlob.totalEtudiants > 0 ? Math.round(((statsGlob.totalPresentsS1 + statsGlob.totalPresentsS2) / (statsGlob.totalEtudiants * 2)) * 100) : 0}%`;
+      document.getElementById('kpi-pp').textContent      = statsGlob.nbPresencesProfs;
+      document.getElementById('kpi-emails').textContent  = statsGlob.totalEmails || 0;
+
+      // ── Stats par matière
+      const parMatiere = {};
+      seances.forEach(s => {
+        if (!parMatiere[s.matiere]) parMatiere[s.matiere] = { presS1:0, absS1:0, presS2:0, absS2:0, prof:s.profNom||'—' };
+        s.etudiants.forEach(e => {
+          if (e.s1==="Present") parMatiere[s.matiere].presS1++;
+          else parMatiere[s.matiere].absS1++;
+          if (e.s2==="Present") parMatiere[s.matiere].presS2++;
+          else parMatiere[s.matiere].absS2++;
+        });
+      });
+
+      // ── Stats par étudiant (global)
+      const parEtu = {};
+      seances.forEach(s => {
+        s.etudiants.forEach(e => {
+          if (!parEtu[e.nom]) parEtu[e.nom] = { presS1:0, absS1:0, presS2:0, absS2:0 };
+          if (e.s1==="Present") parEtu[e.nom].presS1++;
+          else parEtu[e.nom].absS1++;
+          if (e.s2==="Present") parEtu[e.nom].presS2++;
+          else parEtu[e.nom].absS2++;
+        });
+      });
+
+      // Étudiants à risque
+      const risqueCount = Object.values(parEtu).filter(s => {
+        const t = s.presS1+s.absS1+s.presS2+s.absS2;
+        return t > 0 && ((s.presS1+s.presS2)/t)*100 < 70;
+      }).length;
+      document.getElementById('kpi-risque').textContent = risqueCount;
+
+      // ── CHART 1 : Pie global
+      const totalPres = statsGlob.totalPresentsS1 + statsGlob.totalPresentsS2;
+      const totalAbs  = (statsGlob.totalEtudiants * seances.length * 2) - totalPres;
+      new Chart(document.getElementById('chartGlobal'), {
+        type: 'doughnut',
+        data: {
+          labels: ['Présents', 'Absents'],
+          datasets: [{
+            data: [totalPres, Math.max(0, totalAbs)],
+            backgroundColor: ['rgba(16,185,129,0.85)', 'rgba(239,68,68,0.85)'],
+            borderColor: '#07090f', borderWidth: 3, hoverOffset: 8
+          }]
+        },
+        options: {
+          responsive:true, maintainAspectRatio:false, cutout:'65%',
+          plugins: {
+            legend:{position:'bottom',labels:{font:{family:'Space Mono',size:11},padding:16}},
+            tooltip:{callbacks:{label:ctx=>` ${ctx.label}: ${ctx.raw}`}}
+          }
+        }
+      });
+
+      // ── CHART 2 : Par matière
+      const matLabels  = Object.keys(parMatiere);
+      const matTauxS1  = matLabels.map(m => { const d=parMatiere[m]; const t=d.presS1+d.absS1; return t>0?Math.round((d.presS1/t)*100):0; });
+      const matTauxS2  = matLabels.map(m => { const d=parMatiere[m]; const t=d.presS2+d.absS2; return t>0?Math.round((d.presS2/t)*100):0; });
+
+      new Chart(document.getElementById('chartMatieres'), {
+        type: 'bar',
+        data: {
+          labels: matLabels,
+          datasets: [
+            { label:'Séance 1 (%)', data:matTauxS1, backgroundColor:'rgba(0,212,255,0.7)', borderColor:'rgba(0,212,255,1)', borderWidth:1, borderRadius:6 },
+            { label:'Séance 2 (%)', data:matTauxS2, backgroundColor:'rgba(124,58,237,0.7)', borderColor:'rgba(124,58,237,1)', borderWidth:1, borderRadius:6 }
+          ]
+        },
+        options: {
+          responsive:true, maintainAspectRatio:false,
+          scales: {
+            y:{min:0,max:100,ticks:{callback:v=>`${v}%`,font:{family:'Space Mono',size:10}},grid:{color:'rgba(30,45,69,0.6)'}},
+            x:{ticks:{font:{family:'Space Mono',size:9}},grid:{color:'transparent'}}
+          },
+          plugins:{legend:{position:'bottom',labels:{font:{family:'Space Mono',size:11},padding:16}}}
+        }
+      });
+
+      // ── CHART 3 : Évolution globale dans le temps
+      const parDate = {};
+      seances.forEach(s => {
+        if (!parDate[s.date]) parDate[s.date] = { pres:0, total:0 };
+        s.etudiants.forEach(e => {
+          parDate[s.date].total += 2;
+          if (e.s1==="Present") parDate[s.date].pres++;
+          if (e.s2==="Present") parDate[s.date].pres++;
+        });
+      });
+      const datesSort  = Object.keys(parDate).sort();
+      const tauxDates  = datesSort.map(d => parDate[d].total>0?Math.round((parDate[d].pres/parDate[d].total)*100):0);
+
+      new Chart(document.getElementById('chartEvolution'), {
+        type: 'line',
+        data: {
+          labels: datesSort,
+          datasets: [{
+            label: 'Taux de présence global (%)',
+            data: tauxDates,
+            borderColor: 'rgba(167,139,250,0.9)',
+            backgroundColor: 'rgba(124,58,237,0.08)',
+            borderWidth: 2.5,
+            pointBackgroundColor: 'rgba(167,139,250,1)',
+            pointRadius: 5, tension: 0.4, fill: true
+          }]
+        },
+        options: {
+          responsive:true, maintainAspectRatio:false,
+          scales: {
+            y:{min:0,max:100,ticks:{callback:v=>`${v}%`,font:{family:'Space Mono',size:10}},grid:{color:'rgba(30,45,69,0.6)'}},
+            x:{ticks:{font:{family:'Space Mono',size:9}},grid:{color:'rgba(30,45,69,0.6)'}}
+          },
+          plugins:{legend:{position:'bottom',labels:{font:{family:'Space Mono',size:11},padding:16}}}
+        }
+      });
+
+      // ── CHART 4 : Par professeur
+      const parProf = {};
+      seances.forEach(s => {
+        const k = s.profNom || '—';
+        if (!parProf[k]) parProf[k] = { pres:0, total:0 };
+        s.etudiants.forEach(e => {
+          parProf[k].total += 2;
+          if (e.s1==="Present") parProf[k].pres++;
+          if (e.s2==="Present") parProf[k].pres++;
+        });
+      });
+      const profLabels = Object.keys(parProf);
+      const profTaux   = profLabels.map(p => parProf[p].total>0?Math.round((parProf[p].pres/parProf[p].total)*100):0);
+
+      new Chart(document.getElementById('chartProfs'), {
+        type: 'bar',
+        data: {
+          labels: profLabels,
+          datasets: [{
+            label: 'Taux de présence (%)',
+            data: profTaux,
+            backgroundColor: profTaux.map(t => t>=70?'rgba(16,185,129,0.7)':t>=50?'rgba(245,158,11,0.7)':'rgba(239,68,68,0.7)'),
+            borderColor: profTaux.map(t => t>=70?'rgba(16,185,129,1)':t>=50?'rgba(245,158,11,1)':'rgba(239,68,68,1)'),
+            borderWidth: 1, borderRadius: 8
+          }]
+        },
+        options: {
+          responsive:true, maintainAspectRatio:false,
+          scales:{
+            y:{min:0,max:100,ticks:{callback:v=>`${v}%`,font:{family:'Space Mono',size:10}},grid:{color:'rgba(30,45,69,0.6)'}},
+            x:{ticks:{font:{family:'Space Mono',size:9}},grid:{color:'transparent'}}
+          },
+          plugins:{legend:{display:false}}
+        }
+      });
+
+      // ── TABLEAU ÉTUDIANTS À RISQUE
+      const risqueList = Object.entries(parEtu)
+        .map(([nom, s]) => {
+          const total = s.presS1+s.absS1+s.presS2+s.absS2;
+          const pres  = s.presS1+s.presS2;
+          const taux  = total>0?Math.round((pres/total)*100):0;
+          return { nom, taux, absTotal:s.absS1+s.absS2, presS1:s.presS1, presS2:s.presS2 };
+        })
+        .sort((a,b) => a.taux - b.taux);
+
+      const risqueContent = document.getElementById('risque-content');
+      const risqueOnly = risqueList.filter(e => e.taux < 70);
+
+      if (risqueOnly.length === 0) {
+        risqueContent.innerHTML = '<div style="text-align:center;font-family:var(--mono);font-size:0.78rem;color:var(--success);padding:1.5rem;">✅ Aucun étudiant à risque !</div>';
+      } else {
+        let html = '<table class="risk-table"><thead><tr><th>Étudiant</th><th>Taux Global</th><th>Total Absences</th><th>Statut</th></tr></thead><tbody>';
+        risqueOnly.forEach(e => {
+          const color = e.taux>=50?'#f59e0b':'#ef4444';
+          const badge = e.taux>=50?'badge-warn':'badge-risk';
+          const label = e.taux>=50?'⚠ Attention':'🔴 Risque élevé';
+          html += `<tr>
+            <td style="font-weight:600">${e.nom}</td>
+            <td>
+              <div style="font-weight:700;color:${color}">${e.taux}%</div>
+              <div class="taux-bar"><div class="taux-fill" style="width:${e.taux}%;background:${color}"></div></div>
+            </td>
+            <td style="color:var(--danger);font-weight:700">${e.absTotal} absences</td>
+            <td><span class="badge ${badge}">${label}</span></td>
+          </tr>`;
+        });
+        html += '</tbody></table>';
+        risqueContent.innerHTML = html;
+      }
+
+    } catch (err) {
+      document.getElementById('loading').textContent = '❌ Erreur de chargement.';
+      console.error(err);
+    }
+  }
+
+  chargerStats();
+</script>
+</body>
+</html>
