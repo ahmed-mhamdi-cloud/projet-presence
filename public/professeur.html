@@ -14,105 +14,184 @@
     --bg:#07090f; --surface:#0f1623; --border:#1a2540;
     --accent:#00d4ff; --accent2:#7c3aed; --success:#10b981;
     --danger:#ef4444; --warn:#f59e0b; --email:#3b82f6;
-    --excel:#16a34a; --pdf:#dc2626;
     --text:#e2e8f0; --muted:#64748b;
     --mono:'Space Mono',monospace; --sans:'Syne',sans-serif;
   }
   *{margin:0;padding:0;box-sizing:border-box}
-  body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;background-image:radial-gradient(ellipse at 20% 0%,rgba(0,212,255,0.06) 0%,transparent 55%);}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;
+    background-image:radial-gradient(ellipse at 20% 0%,rgba(0,212,255,0.06) 0%,transparent 55%);}
 
-  nav{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.5rem;border-bottom:1px solid var(--border);background:rgba(15,22,35,0.95);backdrop-filter:blur(12px);position:sticky;top:0;z-index:100;}
+  /* NAV */
+  nav{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.5rem;
+    border-bottom:1px solid var(--border);background:rgba(15,22,35,0.95);
+    backdrop-filter:blur(12px);position:sticky;top:0;z-index:100;}
   .nav-brand{font-size:0.85rem;font-weight:800;color:var(--accent);font-family:var(--mono);}
   .nav-user{font-family:var(--mono);font-size:0.7rem;color:var(--muted);}
   .nav-user span{color:var(--text);}
-  .btn-logout{font-family:var(--mono);font-size:0.68rem;color:var(--muted);background:none;border:1px solid var(--border);border-radius:6px;padding:0.35rem 0.75rem;cursor:pointer;transition:all 0.2s;margin-left:1rem;}
+  .btn-logout{font-family:var(--mono);font-size:0.68rem;color:var(--muted);background:none;
+    border:1px solid var(--border);border-radius:6px;padding:0.35rem 0.75rem;cursor:pointer;transition:all 0.2s;margin-left:0.75rem;}
   .btn-logout:hover{border-color:var(--danger);color:var(--danger);}
 
-  main{max-width:700px;margin:0 auto;padding:2rem 1rem;}
-  .section-label{font-family:var(--mono);font-size:0.65rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent);margin-bottom:0.6rem;}
-  .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:1.5rem;margin-bottom:1.5rem;}
+  main{max-width:620px;margin:0 auto;padding:2rem 1rem 4rem;}
 
-  label{display:block;font-family:var(--mono);font-size:0.65rem;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:0.4rem;}
-  input,select{background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--mono);font-size:0.85rem;padding:0.65rem 0.9rem;outline:none;transition:border-color 0.2s;width:100%;}
-  input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,212,255,0.08);}
-  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+  /* ─── WORKFLOW STEPS ─── */
+  .workflow{display:flex;flex-direction:column;gap:1.25rem;}
 
-  .btn{display:inline-flex;align-items:center;justify-content:center;gap:0.4rem;padding:0.75rem 1.25rem;border-radius:10px;font-family:var(--sans);font-weight:700;font-size:0.85rem;cursor:pointer;border:none;transition:all 0.2s;white-space:nowrap;}
-  .btn-full{width:100%;margin-top:0.75rem;}
+  .step{border-radius:16px;overflow:hidden;transition:all 0.3s;}
+
+  /* État verrouillé */
+  .step.locked{opacity:0.45;pointer-events:none;}
+  .step.locked .step-header{cursor:default;}
+
+  /* État fait */
+  .step.done .step-header{background:rgba(16,185,129,0.08);border-color:rgba(16,185,129,0.2);}
+  .step.done .step-num{background:var(--success);color:#fff;}
+  .step.done .step-title{color:var(--success);}
+
+  /* État actif */
+  .step.active .step-header{background:rgba(0,212,255,0.06);border-color:rgba(0,212,255,0.25);}
+  .step.active .step-num{background:var(--accent);color:#000;}
+
+  /* Finaliser spécial */
+  .step.finaliser .step-header{background:rgba(124,58,237,0.06);border-color:rgba(124,58,237,0.25);}
+  .step.finaliser .step-num{background:var(--accent2);color:#fff;}
+  .step.finaliser .step-title{color:#a78bfa;}
+
+  .step-header{display:flex;align-items:center;gap:1rem;padding:1.1rem 1.25rem;
+    border:1px solid var(--border);border-radius:16px;background:var(--surface);}
+
+  .step.active .step-header,.step.done .step-header,.step.finaliser .step-header{
+    border-bottom-left-radius:0;border-bottom-right-radius:0;}
+
+  .step-num{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;
+    justify-content:center;font-family:var(--mono);font-size:0.8rem;font-weight:700;
+    background:var(--border);color:var(--muted);flex-shrink:0;transition:all 0.3s;}
+
+  .step-info{flex:1;}
+  .step-title{font-size:0.95rem;font-weight:700;margin-bottom:0.2rem;transition:color 0.3s;}
+  .step-desc{font-family:var(--mono);font-size:0.68rem;color:var(--muted);}
+
+  .step-status{font-family:var(--mono);font-size:0.68rem;padding:0.25rem 0.65rem;
+    border-radius:99px;white-space:nowrap;}
+  .status-done   {background:rgba(16,185,129,0.1);color:var(--success);border:1px solid rgba(16,185,129,0.25);}
+  .status-active {background:rgba(0,212,255,0.1);color:var(--accent);border:1px solid rgba(0,212,255,0.25);}
+  .status-locked {background:rgba(100,116,139,0.1);color:var(--muted);border:1px solid rgba(100,116,139,0.2);}
+  .status-waiting{background:rgba(245,158,11,0.1);color:var(--warn);border:1px solid rgba(245,158,11,0.25);}
+
+  /* Body de chaque step */
+  .step-body{border:1px solid var(--border);border-top:none;border-radius:0 0 16px 16px;
+    padding:1.25rem;background:var(--surface);}
+
+  /* BOUTONS */
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:0.4rem;
+    padding:0.75rem 1.25rem;border-radius:10px;font-family:var(--sans);font-weight:700;
+    font-size:0.85rem;cursor:pointer;border:none;transition:all 0.2s;width:100%;}
   .btn-primary{background:linear-gradient(135deg,var(--accent),#0090b3);color:#000;}
   .btn-primary:hover{box-shadow:0 6px 18px rgba(0,212,255,0.25);transform:translateY(-1px);}
+  .btn-primary:disabled{opacity:0.4;cursor:not-allowed;transform:none;box-shadow:none;}
   .btn-pointer{background:linear-gradient(135deg,var(--success),#059669);color:#fff;}
   .btn-pointer:hover{box-shadow:0 6px 18px rgba(16,185,129,0.25);}
-  .btn-renew{background:transparent;border:1px solid var(--accent2);color:#a78bfa;width:100%;margin-top:0.5rem;}
-  .btn-renew:hover{background:rgba(124,58,237,0.1);}
-  .btn-outline{background:transparent;border:1px solid var(--border);color:var(--muted);}
-  .btn-outline:hover{border-color:var(--accent);color:var(--accent);}
+  .btn-s1{background:linear-gradient(135deg,#0090b3,var(--accent));color:#000;}
+  .btn-s1:hover{box-shadow:0 6px 18px rgba(0,212,255,0.2);transform:translateY(-1px);}
+  .btn-s2{background:linear-gradient(135deg,#5b21b6,var(--accent2));color:#fff;}
+  .btn-s2:hover{box-shadow:0 6px 18px rgba(124,58,237,0.25);transform:translateY(-1px);}
+  .btn-finaliser{background:linear-gradient(135deg,var(--success),#059669);color:#fff;font-size:1rem;padding:1rem;}
+  .btn-finaliser:hover{box-shadow:0 8px 24px rgba(16,185,129,0.3);transform:translateY(-2px);}
+  .btn-finaliser:disabled{opacity:0.4;cursor:not-allowed;transform:none;box-shadow:none;}
   .btn-email{background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;}
-  .btn-email:hover{box-shadow:0 6px 18px rgba(59,130,246,0.35);transform:translateY(-1px);}
-  .btn-email:disabled{opacity:0.5;cursor:not-allowed;transform:none;}
-
-  /* BOUTONS EXPORT */
+  .btn-email:hover{box-shadow:0 4px 14px rgba(59,130,246,0.3);transform:translateY(-1px);}
+  .btn-email:disabled{opacity:0.4;cursor:not-allowed;transform:none;}
+  .btn-renew{background:transparent;border:1px solid var(--accent2);color:#a78bfa;margin-top:0.5rem;}
+  .btn-renew:hover{background:rgba(124,58,237,0.1);}
+  .btn-outline{background:transparent;border:1px solid var(--border);color:var(--muted);font-size:0.75rem;padding:0.5rem;}
+  .btn-outline:hover{border-color:var(--accent);color:var(--accent);}
   .btn-excel{background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;font-size:0.75rem;padding:0.5rem 1rem;}
-  .btn-excel:hover{box-shadow:0 4px 14px rgba(22,163,74,0.35);transform:translateY(-1px);}
+  .btn-excel:hover{box-shadow:0 4px 14px rgba(22,163,74,0.3);}
   .btn-pdf{background:linear-gradient(135deg,#dc2626,#b91c1c);color:#fff;font-size:0.75rem;padding:0.5rem 1rem;}
-  .btn-pdf:hover{box-shadow:0 4px 14px rgba(220,38,38,0.35);transform:translateY(-1px);}
+  .btn-pdf:hover{box-shadow:0 4px 14px rgba(220,38,38,0.3);}
+  .btn-sm{width:auto;padding:0.5rem 1rem;font-size:0.75rem;}
 
-  /* ZONE EMAIL */
-  .email-zone{background:rgba(59,130,246,0.05);border:1px solid rgba(59,130,246,0.2);border-radius:12px;padding:1.25rem;margin-top:0.75rem;}
-  .email-zone-title{font-family:var(--mono);font-size:0.68rem;color:var(--email);margin-bottom:0.6rem;letter-spacing:0.06em;text-transform:uppercase;}
-  .email-zone-desc{font-family:var(--mono);font-size:0.7rem;color:var(--muted);margin-bottom:1rem;line-height:1.7;}
-
-  #email-result{display:none;margin-top:1rem;padding:1rem;border-radius:10px;font-family:var(--mono);font-size:0.75rem;line-height:1.8;}
-  #email-result.ok  {background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);color:var(--success);}
-  #email-result.err {background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);color:var(--danger);}
-  #email-result.warn{background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);color:var(--warn);}
-  .email-detail-row{display:flex;justify-content:space-between;align-items:center;padding:0.3rem 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:0.7rem;}
-  .email-detail-row:last-child{border-bottom:none;}
+  /* ALERTE non finalisée */
+  .alert-bloque{background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);
+    border-radius:12px;padding:1rem;font-family:var(--mono);font-size:0.78rem;
+    color:var(--danger);line-height:1.7;margin-bottom:1.5rem;}
 
   /* QR */
-  #qr-zone{display:none;text-align:center;margin-top:1.25rem;}
-  #qrcode{display:inline-block;background:#fff;padding:14px;border-radius:12px;margin:0.75rem 0;}
-  #qr-pointer{display:none;text-align:center;margin-top:1rem;}
-  #qrcode-pointer{display:inline-block;background:#fff;padding:12px;border-radius:10px;}
-  #timer-bar{height:5px;border-radius:3px;background:var(--border);overflow:hidden;margin:0.5rem 0;}
-  #timer-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--success),var(--accent));transition:width 1s linear;}
-  #timer-text{font-family:var(--mono);font-size:0.72rem;color:var(--muted);}
+  .qr-box{text-align:center;margin:1rem 0;}
+  .qr-box canvas,.qr-box img{display:inline-block;background:#fff;padding:12px;border-radius:12px;}
+  .qr-label{font-family:var(--mono);font-size:0.7rem;color:var(--muted);margin-top:0.5rem;}
 
-  .badge{display:inline-flex;align-items:center;gap:0.3rem;padding:0.25rem 0.65rem;border-radius:99px;font-family:var(--mono);font-size:0.68rem;}
-  .badge-ok    {background:rgba(16,185,129,0.1);color:var(--success);border:1px solid rgba(16,185,129,0.25);}
-  .badge-absent{background:rgba(239,68,68,0.08);color:var(--danger);border:1px solid rgba(239,68,68,0.2);}
-  .badge-email {background:rgba(59,130,246,0.1);color:var(--email);border:1px solid rgba(59,130,246,0.2);font-size:0.6rem;margin-top:0.2rem;}
+  /* Timer */
+  .timer-bar{height:5px;border-radius:3px;background:var(--border);overflow:hidden;margin:0.5rem 0;}
+  .timer-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--success),var(--accent));transition:width 1s linear;}
+  .timer-text{font-family:var(--mono);font-size:0.72rem;color:var(--muted);}
 
-  /* SÉANCE CARD */
-  .seance-card{background:var(--bg);border:1px solid var(--border);border-radius:12px;margin-bottom:1.25rem;overflow:hidden;}
-  .seance-head{display:flex;justify-content:space-between;align-items:center;padding:0.85rem 1rem;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:0.5rem;}
+  /* Email result */
+  .email-result{display:none;margin-top:0.75rem;padding:0.85rem;border-radius:10px;
+    font-family:var(--mono);font-size:0.75rem;line-height:1.8;}
+  .email-result.ok  {background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);color:var(--success);}
+  .email-result.err {background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);color:var(--danger);}
+  .email-result.warn{background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);color:var(--warn);}
+  .email-row{display:flex;justify-content:space-between;padding:0.25rem 0;
+    border-bottom:1px solid rgba(255,255,255,0.05);font-size:0.7rem;}
+  .email-row:last-child{border-bottom:none;}
+
+  /* Finaliser success */
+  .finaliser-success{display:none;text-align:center;padding:1.5rem;}
+  .finaliser-success .big-icon{font-size:3rem;margin-bottom:0.75rem;}
+  .finaliser-success h3{font-size:1.1rem;font-weight:800;color:var(--success);margin-bottom:0.5rem;}
+  .finaliser-success p{font-family:var(--mono);font-size:0.75rem;color:var(--muted);line-height:1.7;}
+
+  /* Séances archivées */
+  .section-label{font-family:var(--mono);font-size:0.65rem;letter-spacing:0.12em;
+    text-transform:uppercase;color:var(--accent);margin-bottom:0.75rem;margin-top:2.5rem;}
+  .seance-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:1rem;overflow:hidden;}
+  .seance-head{display:flex;justify-content:space-between;align-items:center;
+    padding:0.85rem 1rem;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:0.5rem;}
   .seance-head-title{font-family:var(--mono);font-size:0.8rem;}
   .seance-head-date{font-family:var(--mono);font-size:0.7rem;color:var(--muted);}
   .seance-stats{display:flex;gap:1rem;padding:0.5rem 1rem;border-bottom:1px solid var(--border);flex-wrap:wrap;}
   .stat{font-family:var(--mono);font-size:0.68rem;color:var(--muted);}
   .stat strong{color:var(--text);}
-
-  /* BOUTONS EXPORT DANS LA CARD */
-  .export-row{display:flex;gap:0.5rem;padding:0.75rem 1rem;border-bottom:1px solid var(--border);flex-wrap:wrap;align-items:center;}
-  .export-label{font-family:var(--mono);font-size:0.62rem;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;margin-right:0.5rem;}
-
+  .export-row{display:flex;gap:0.5rem;padding:0.6rem 1rem;border-bottom:1px solid var(--border);flex-wrap:wrap;align-items:center;}
+  .export-label{font-family:var(--mono);font-size:0.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-right:0.25rem;}
+  .badge{display:inline-flex;align-items:center;gap:0.3rem;padding:0.22rem 0.65rem;border-radius:99px;font-family:var(--mono);font-size:0.65rem;}
+  .badge-ok    {background:rgba(16,185,129,0.1);color:var(--success);border:1px solid rgba(16,185,129,0.25);}
+  .badge-absent{background:rgba(239,68,68,0.08);color:var(--danger);border:1px solid rgba(239,68,68,0.2);}
+  .badge-fin   {background:rgba(16,185,129,0.1);color:var(--success);border:1px solid rgba(16,185,129,0.2);font-size:0.6rem;}
+  .badge-actif {background:rgba(245,158,11,0.1);color:var(--warn);border:1px solid rgba(245,158,11,0.2);font-size:0.6rem;}
   table{width:100%;border-collapse:collapse;}
   th{font-family:var(--mono);font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);padding:0.6rem 1rem;text-align:left;}
   td{font-family:var(--mono);font-size:0.75rem;padding:0.6rem 1rem;border-top:1px solid rgba(26,37,64,0.5);}
   tr:hover td{background:rgba(0,212,255,0.02);}
-
   .divider{border:none;border-top:1px solid var(--border);margin:1rem 0;}
-  #loading{text-align:center;font-family:var(--mono);font-size:0.78rem;color:var(--muted);padding:2rem;}
 
-  #logs-panel{display:none;margin-top:0.75rem;}
-  .log-entry{display:flex;justify-content:space-between;padding:0.5rem 0.75rem;border-radius:7px;font-family:var(--mono);font-size:0.68rem;margin-bottom:0.3rem;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);color:var(--danger);word-break:break-all;}
+  /* Logs */
+  .logs-panel{display:none;margin-top:0.75rem;}
+  .log-entry{display:flex;justify-content:space-between;padding:0.5rem 0.75rem;border-radius:7px;
+    font-family:var(--mono);font-size:0.68rem;margin-bottom:0.3rem;
+    background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);color:var(--danger);word-break:break-all;}
   .log-time{color:var(--muted);white-space:nowrap;margin-left:0.5rem;flex-shrink:0;}
 
-  #toast{position:fixed;bottom:1.5rem;right:1.5rem;padding:0.85rem 1.25rem;border-radius:10px;font-family:var(--mono);font-size:0.8rem;opacity:0;transform:translateY(12px);transition:all 0.25s;z-index:999;max-width:300px;}
+  /* Date input */
+  .date-row{margin-bottom:1rem;}
+  label{display:block;font-family:var(--mono);font-size:0.65rem;color:var(--muted);
+    letter-spacing:0.08em;text-transform:uppercase;margin-bottom:0.4rem;}
+  input[type="date"]{background:var(--bg);border:1px solid var(--border);border-radius:8px;
+    color:var(--text);font-family:var(--mono);font-size:0.85rem;padding:0.65rem 0.9rem;
+    outline:none;transition:border-color 0.2s;width:100%;}
+  input[type="date"]:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,212,255,0.08);}
+
+  /* Toast */
+  #toast{position:fixed;bottom:1.5rem;right:1.5rem;padding:0.85rem 1.25rem;border-radius:10px;
+    font-family:var(--mono);font-size:0.8rem;opacity:0;transform:translateY(12px);
+    transition:all 0.25s;z-index:999;max-width:320px;}
   #toast.show{opacity:1;transform:translateY(0);}
   #toast.ok  {background:rgba(16,185,129,0.92);color:#fff;}
   #toast.err {background:rgba(239,68,68,0.92);color:#fff;}
   #toast.warn{background:rgba(245,158,11,0.92);color:#000;}
+
+  #loading-init{text-align:center;font-family:var(--mono);font-size:0.78rem;color:var(--muted);padding:3rem;}
 </style>
 </head>
 <body>
@@ -120,86 +199,181 @@
 <nav>
   <div class="nav-brand">🎓 EPT — Espace Prof</div>
   <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap">
-    <div class="nav-user"><span id="nav-nom">—</span> &nbsp;·&nbsp; <span id="nav-matiere" style="color:var(--accent)">—</span></div>
+    <div class="nav-user">
+      <span id="nav-nom">—</span> &nbsp;·&nbsp;
+      <span id="nav-matiere" style="color:var(--accent)">—</span>
+    </div>
     <button class="btn-logout" onclick="logout()">Déconnexion</button>
   </div>
 </nav>
 
 <main>
+  <div id="loading-init">⏳ Chargement…</div>
 
-  <!-- 1. POINTER MA PRÉSENCE -->
-  <p class="section-label">01 · Ma Présence du jour</p>
-  <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;">
-      <div>
-        <h3 style="font-size:1rem;font-weight:700;margin-bottom:0.25rem;">Pointage de présence</h3>
-        <p id="presence-date" style="font-family:var(--mono);font-size:0.7rem;color:var(--muted);">—</p>
+  <!-- ALERTE séance non finalisée autre jour -->
+  <div class="alert-bloque" id="alert-bloque" style="display:none;"></div>
+
+  <!-- WORKFLOW EN 4 ÉTAPES -->
+  <div class="workflow" id="workflow" style="display:none;">
+
+    <!-- ═══ ÉTAPE 1 : POINTER MA PRÉSENCE ═══ -->
+    <div class="step" id="step1">
+      <div class="step-header">
+        <div class="step-num">1</div>
+        <div class="step-info">
+          <div class="step-title">Pointer ma présence</div>
+          <div class="step-desc">Scannez le QR avec votre téléphone et validez</div>
+        </div>
+        <span class="step-status" id="step1-status">En attente</span>
       </div>
-    </div>
-    <button class="btn btn-pointer btn-full" onclick="afficherQRPointer()">
-      📱 Générer mon QR de pointage
-    </button>
-    <div id="qr-pointer">
-      <p style="font-family:var(--mono);font-size:0.72rem;color:var(--muted);margin:0.75rem 0 0.5rem;">Scannez ce QR avec votre téléphone</p>
-      <div id="qrcode-pointer"></div>
-    </div>
-  </div>
-
-  <!-- 2. SÉANCE ÉTUDIANTS -->
-  <p class="section-label">02 · Séance Étudiants</p>
-  <div class="card">
-    <div class="form-row" style="margin-bottom:0.75rem;">
-      <div><label>Date</label><input type="date" id="date" /></div>
-      <div>
-        <label>Séance</label>
-        <select id="typeSeance">
-          <option value="Seance 1">Séance 1</option>
-          <option value="Seance 2">Séance 2</option>
-        </select>
-      </div>
-    </div>
-
-    <button class="btn btn-primary btn-full" onclick="demarrerSeance()">
-      ▶ Générer le QR Code Étudiant
-    </button>
-
-    <div id="qr-zone">
-      <div id="qrcode"></div>
-      <div id="timer-bar"><div id="timer-fill" style="width:100%"></div></div>
-      <p id="timer-text">⏳ Expiration dans <span id="countdown">15:00</span></p>
-      <button class="btn btn-renew" onclick="renouvelerToken()">🔄 Renouveler (15 min)</button>
-
-      <hr class="divider">
-
-      <!-- ZONE EMAIL -->
-      <div class="email-zone">
-        <p class="email-zone-title">📧 Notifications Email — Absents</p>
-        <p class="email-zone-desc">Envoie un email à chaque étudiant absent avec tous les détails de la séance.</p>
-        <button class="btn btn-email" id="btn-email" onclick="notifierAbsents()" style="width:100%;">
-          📨 Envoyer email aux absents de la <span id="label-seance-btn">Séance 1</span>
+      <div class="step-body" id="step1-body">
+        <button class="btn btn-pointer" onclick="afficherQRPointer()">
+          📱 Générer mon QR de pointage
         </button>
-        <div id="email-result"></div>
-      </div>
-
-      <hr class="divider">
-      <button class="btn btn-outline btn-full" style="font-size:0.75rem;padding:0.5rem;" onclick="toggleLogs()">🛡 Logs de sécurité</button>
-      <div id="logs-panel">
-        <div style="font-family:var(--mono);font-size:0.65rem;color:var(--muted);margin:0.5rem 0 0.3rem;">TENTATIVES BLOQUÉES :</div>
-        <div id="logs-list"></div>
+        <div id="qr-pointer-zone" style="display:none;">
+          <div class="qr-box">
+            <div id="qrcode-pointer"></div>
+          </div>
+          <p class="qr-label">Scannez ce QR avec votre téléphone → appuyez sur "Valider ma présence"</p>
+          <p class="qr-label" style="color:var(--warn);margin-top:0.25rem;">⚡ Valide 8h · Une seule utilisation par jour</p>
+        </div>
+        <div id="step1-done-msg" style="display:none;text-align:center;padding:1rem;">
+          <div style="font-size:2rem;margin-bottom:0.5rem;">✅</div>
+          <div style="font-family:var(--mono);font-size:0.78rem;color:var(--success);">Présence validée aujourd'hui</div>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- 3. MES SÉANCES -->
-  <p class="section-label">03 · Mes séances enregistrées</p>
-  <div id="loading">⏳ Chargement…</div>
+    <!-- ═══ ÉTAPE 2 : SÉANCE 1 ═══ -->
+    <div class="step locked" id="step2">
+      <div class="step-header">
+        <div class="step-num">2</div>
+        <div class="step-info">
+          <div class="step-title">Séance 1</div>
+          <div class="step-desc">Générez le QR Code pour les étudiants</div>
+        </div>
+        <span class="step-status status-locked" id="step2-status">🔒 Verrouillé</span>
+      </div>
+      <div class="step-body" id="step2-body">
+        <div class="date-row">
+          <label>Date de la séance</label>
+          <input type="date" id="date-seance" />
+        </div>
+        <button class="btn btn-s1" id="btn-s1" onclick="demarrerSeance('Seance 1')">
+          ▶ Démarrer la Séance 1
+        </button>
+        <div id="qr-s1-zone" style="display:none;margin-top:1rem;">
+          <div class="qr-box"><div id="qrcode-s1"></div></div>
+          <div class="timer-bar"><div class="timer-fill" id="fill-s1" style="width:100%"></div></div>
+          <p class="timer-text">⏳ <span id="countdown-s1">15:00</span></p>
+          <button class="btn btn-renew" onclick="renouvelerToken('Seance 1')">🔄 Renouveler (15 min)</button>
+
+          <!-- Email S1 -->
+          <hr class="divider">
+          <div style="background:rgba(59,130,246,0.05);border:1px solid rgba(59,130,246,0.15);border-radius:10px;padding:1rem;">
+            <p style="font-family:var(--mono);font-size:0.65rem;color:var(--email);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.6rem;">📧 Notifier absents Séance 1</p>
+            <button class="btn btn-email" id="btn-email-s1" onclick="notifierAbsents('Seance 1','email-result-s1','btn-email-s1')">
+              📨 Envoyer emails absents S1
+            </button>
+            <div class="email-result" id="email-result-s1"></div>
+          </div>
+
+          <hr class="divider">
+          <button class="btn btn-outline" onclick="toggleLogs('Seance 1')">🛡 Logs de sécurité S1</button>
+          <div class="logs-panel" id="logs-s1"><div style="font-family:var(--mono);font-size:0.65rem;color:var(--muted);margin:0.5rem 0 0.3rem;">TENTATIVES :</div><div id="logs-list-s1"></div></div>
+        </div>
+        <div id="step2-done-msg" style="display:none;text-align:center;padding:0.75rem;">
+          <span style="font-family:var(--mono);font-size:0.78rem;color:var(--success);">✅ Séance 1 démarrée</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ ÉTAPE 3 : SÉANCE 2 ═══ -->
+    <div class="step locked" id="step3">
+      <div class="step-header">
+        <div class="step-num">3</div>
+        <div class="step-info">
+          <div class="step-title">Séance 2</div>
+          <div class="step-desc">Disponible après avoir démarré la Séance 1</div>
+        </div>
+        <span class="step-status status-locked" id="step3-status">🔒 Verrouillé</span>
+      </div>
+      <div class="step-body" id="step3-body">
+        <button class="btn btn-s2" id="btn-s2" onclick="demarrerSeance('Seance 2')">
+          ▶ Démarrer la Séance 2
+        </button>
+        <div id="qr-s2-zone" style="display:none;margin-top:1rem;">
+          <div class="qr-box"><div id="qrcode-s2"></div></div>
+          <div class="timer-bar"><div class="timer-fill" id="fill-s2" style="width:100%"></div></div>
+          <p class="timer-text">⏳ <span id="countdown-s2">15:00</span></p>
+          <button class="btn btn-renew" onclick="renouvelerToken('Seance 2')">🔄 Renouveler (15 min)</button>
+
+          <!-- Email S2 -->
+          <hr class="divider">
+          <div style="background:rgba(59,130,246,0.05);border:1px solid rgba(59,130,246,0.15);border-radius:10px;padding:1rem;">
+            <p style="font-family:var(--mono);font-size:0.65rem;color:var(--email);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.6rem;">📧 Notifier absents Séance 2</p>
+            <button class="btn btn-email" id="btn-email-s2" onclick="notifierAbsents('Seance 2','email-result-s2','btn-email-s2')">
+              📨 Envoyer emails absents S2
+            </button>
+            <div class="email-result" id="email-result-s2"></div>
+          </div>
+
+          <hr class="divider">
+          <button class="btn btn-outline" onclick="toggleLogs('Seance 2')">🛡 Logs de sécurité S2</button>
+          <div class="logs-panel" id="logs-s2"><div style="font-family:var(--mono);font-size:0.65rem;color:var(--muted);margin:0.5rem 0 0.3rem;">TENTATIVES :</div><div id="logs-list-s2"></div></div>
+        </div>
+        <div id="step3-done-msg" style="display:none;text-align:center;padding:0.75rem;">
+          <span style="font-family:var(--mono);font-size:0.78rem;color:var(--success);">✅ Séance 2 démarrée</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ ÉTAPE 4 : FINALISER ═══ -->
+    <div class="step locked" id="step4">
+      <div class="step-header">
+        <div class="step-num">4</div>
+        <div class="step-info">
+          <div class="step-title">Sauvegarder les 2 séances</div>
+          <div class="step-desc">Finalise et enregistre définitivement les présences</div>
+        </div>
+        <span class="step-status status-locked" id="step4-status">🔒 Verrouillé</span>
+      </div>
+      <div class="step-body" id="step4-body">
+        <div id="finaliser-form">
+          <div style="background:rgba(124,58,237,0.06);border:1px solid rgba(124,58,237,0.2);border-radius:10px;padding:1rem;margin-bottom:1rem;font-family:var(--mono);font-size:0.75rem;color:#a78bfa;line-height:1.7;">
+            ℹ️ En cliquant sur "Sauvegarder", les 2 séances seront définitivement enregistrées.
+            Vous ne pourrez plus démarrer de nouvelles séances tant que celles-ci ne sont pas sauvegardées.
+          </div>
+          <button class="btn btn-finaliser" id="btn-finaliser" onclick="finaliserSeances()">
+            💾 Sauvegarder les 2 séances
+          </button>
+        </div>
+        <div class="finaliser-success" id="finaliser-success">
+          <div class="big-icon">🎉</div>
+          <h3>Séances sauvegardées !</h3>
+          <p id="finaliser-details">Les présences ont été enregistrées avec succès.</p>
+          <div style="margin-top:1.25rem;display:flex;gap:0.75rem;justify-content:center;flex-wrap:wrap;">
+            <button class="btn btn-excel btn-sm" id="btn-export-excel" onclick="exporterExcelAujourdhui()">📊 Excel</button>
+            <button class="btn btn-pdf btn-sm" id="btn-export-pdf" onclick="exporterPDFAujourdhui()">📄 PDF</button>
+          </div>
+        </div>
+        <div id="step4-done-msg" style="display:none;text-align:center;padding:0.75rem;">
+          <span style="font-family:var(--mono);font-size:0.78rem;color:var(--success);">✅ Séances finalisées et sauvegardées</span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /workflow -->
+
+  <!-- ARCHIVES -->
+  <p class="section-label" id="archives-label" style="display:none;">📂 Mes séances enregistrées</p>
   <div id="mes-seances"></div>
 
 </main>
-
 <div id="toast"></div>
 
 <script>
+  // ── Auth
   const token   = localStorage.getItem('prof_token');
   const profNom = localStorage.getItem('prof_nom');
   const profMat = localStorage.getItem('prof_matiere');
@@ -207,12 +381,7 @@
 
   document.getElementById('nav-nom').textContent     = profNom || '—';
   document.getElementById('nav-matiere').textContent = profMat || '—';
-  document.getElementById('presence-date').textContent = new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-  document.getElementById('date').valueAsDate = new Date();
-
-  document.getElementById('typeSeance').addEventListener('change', function() {
-    document.getElementById('label-seance-btn').textContent = this.value;
-  });
+  document.getElementById('date-seance').valueAsDate = new Date();
 
   function logout() {
     ['prof_token','prof_nom','prof_matiere'].forEach(k => localStorage.removeItem(k));
@@ -222,417 +391,484 @@
   function toast(msg, type='ok') {
     const t = document.getElementById('toast');
     t.textContent = msg; t.className = `show ${type}`;
-    setTimeout(() => { t.className = ''; }, 3800);
+    setTimeout(() => t.className = '', 3800);
   }
 
   function authHeaders() {
-    return { 'Content-Type':'application/json', 'Authorization': `Bearer ${token}` };
+    return { 'Content-Type':'application/json', 'Authorization':`Bearer ${token}` };
   }
 
-  // ── QR Pointage prof
+  // ══════════════════════════════════════════
+  //  ÉTAT DU JOUR — initialisation
+  // ══════════════════════════════════════════
+  let etatJour = {};
+  let seanceData = null; // données de la séance d'aujourd'hui
+
+  async function chargerEtatJour() {
+    try {
+      const res  = await fetch('/prof/etat-journee', { headers: authHeaders() });
+      if (res.status === 401 || res.status === 403) { logout(); return; }
+      etatJour = await res.json();
+
+      document.getElementById('loading-init').style.display = 'none';
+      document.getElementById('workflow').style.display     = 'flex';
+
+      // Séance non finalisée autre jour → bloquer
+      if (etatJour.seanceNonFinaliseeAutreJour) {
+        const s = etatJour.seanceNonFinaliseeAutreJour;
+        document.getElementById('alert-bloque').style.display = 'block';
+        document.getElementById('alert-bloque').innerHTML =
+          `⚠️ <strong>Action requise</strong> — Vous avez des séances non sauvegardées du <strong>${s.date}</strong> (${s.matiere}).<br>
+           Veuillez les finaliser avant de démarrer de nouvelles séances.`;
+      }
+
+      appliquerEtat();
+      chargerMesSeances();
+    } catch (err) {
+      document.getElementById('loading-init').textContent = '❌ Erreur de connexion.';
+    }
+  }
+
+  function appliquerEtat() {
+    const { presencePointee, seance1Ouverte, seance2Ouverte, seanceFinalisee } = etatJour;
+
+    // ── ÉTAPE 1 : Présence
+    const step1 = document.getElementById('step1');
+    if (presencePointee) {
+      step1.className = 'step done';
+      document.getElementById('step1-status').className = 'step-status status-done';
+      document.getElementById('step1-status').textContent = '✓ Validée';
+      document.getElementById('step1-body').querySelector('.btn-pointer').style.display = 'none';
+      document.getElementById('step1-done-msg').style.display = 'block';
+    } else {
+      step1.className = 'step active';
+      document.getElementById('step1-status').className = 'step-status status-active';
+      document.getElementById('step1-status').textContent = '→ En cours';
+    }
+
+    // ── ÉTAPE 2 : Séance 1
+    const step2 = document.getElementById('step2');
+    if (!presencePointee) {
+      step2.className = 'step locked';
+    } else if (seanceFinalisee) {
+      step2.className = 'step done';
+      document.getElementById('step2-status').className = 'step-status status-done';
+      document.getElementById('step2-status').textContent = '✓ Finalisée';
+      document.getElementById('step2-done-msg').style.display = 'block';
+      document.getElementById('btn-s1').style.display = 'none';
+    } else if (seance1Ouverte) {
+      step2.className = 'step done';
+      document.getElementById('step2-status').className = 'step-status status-done';
+      document.getElementById('step2-status').textContent = '✓ Démarrée';
+    } else {
+      step2.className = 'step active';
+      document.getElementById('step2-status').className = 'step-status status-active';
+      document.getElementById('step2-status').textContent = '→ À démarrer';
+    }
+
+    // ── ÉTAPE 3 : Séance 2
+    const step3 = document.getElementById('step3');
+    if (!presencePointee || !seance1Ouverte) {
+      step3.className = 'step locked';
+    } else if (seanceFinalisee) {
+      step3.className = 'step done';
+      document.getElementById('step3-status').className = 'step-status status-done';
+      document.getElementById('step3-status').textContent = '✓ Finalisée';
+      document.getElementById('step3-done-msg').style.display = 'block';
+      document.getElementById('btn-s2').style.display = 'none';
+    } else if (seance2Ouverte) {
+      step3.className = 'step done';
+      document.getElementById('step3-status').className = 'step-status status-done';
+      document.getElementById('step3-status').textContent = '✓ Démarrée';
+    } else {
+      step3.className = 'step active';
+      document.getElementById('step3-status').className = 'step-status status-active';
+      document.getElementById('step3-status').textContent = '→ À démarrer';
+    }
+
+    // ── ÉTAPE 4 : Finaliser
+    const step4 = document.getElementById('step4');
+    if (!seance1Ouverte || !seance2Ouverte) {
+      step4.className = 'step locked';
+    } else if (seanceFinalisee) {
+      step4.className = 'step done';
+      document.getElementById('step4-status').className = 'step-status status-done';
+      document.getElementById('step4-status').textContent = '✓ Sauvegardé';
+      document.getElementById('finaliser-form').style.display = 'none';
+      document.getElementById('step4-done-msg').style.display = 'block';
+    } else {
+      step4.className = 'step finaliser';
+      document.getElementById('step4-status').className = 'step-status status-waiting';
+      document.getElementById('step4-status').textContent = '⚡ Prêt';
+    }
+  }
+
+  // ══════════════════════════════════════════
+  //  ÉTAPE 1 : QR POINTAGE PROF
+  // ══════════════════════════════════════════
   function afficherQRPointer() {
-    const zone = document.getElementById('qr-pointer');
+    const zone = document.getElementById('qr-pointer-zone');
     if (zone.style.display === 'block') { zone.style.display = 'none'; return; }
     const url = `${window.location.origin}/pointer-prof.html?token=${encodeURIComponent(token)}`;
     document.getElementById('qrcode-pointer').innerHTML = '';
     new QRCode(document.getElementById('qrcode-pointer'), {
-      text: url, width: 180, height: 180,
+      text: url, width: 200, height: 200,
       colorDark: '#000', colorLight: '#fff', correctLevel: QRCode.CorrectLevel.H
     });
     zone.style.display = 'block';
   }
 
-  // ── Séance
-  let timerInterval = null, expiryDate = null, currentDate, currentType;
+  // Vérifier périodiquement si la présence a été pointée (toutes les 5 sec)
+  let checkPresenceInterval = null;
+  function demarrerCheckPresence() {
+    checkPresenceInterval = setInterval(async () => {
+      if (etatJour.presencePointee) { clearInterval(checkPresenceInterval); return; }
+      const res  = await fetch('/prof/etat-journee', { headers: authHeaders() });
+      const data = await res.json();
+      if (data.presencePointee) {
+        clearInterval(checkPresenceInterval);
+        etatJour = data;
+        appliquerEtat();
+        toast('✅ Présence validée ! Vous pouvez démarrer les séances.');
+      }
+    }, 5000);
+  }
+  demarrerCheckPresence();
 
-  async function demarrerSeance() {
-    const date       = document.getElementById('date').value;
-    const typeSeance = document.getElementById('typeSeance').value;
+  // ══════════════════════════════════════════
+  //  ÉTAPES 2 & 3 : DÉMARRER SÉANCE
+  // ══════════════════════════════════════════
+  let timers  = { s1: null, s2: null };
+  let expiry  = { s1: null, s2: null };
+  let currentDate = null;
+
+  async function demarrerSeance(typeSeance) {
+    const date = document.getElementById('date-seance').value;
     if (!date) return toast('Sélectionnez une date.', 'err');
-    currentDate = date; currentType = typeSeance;
+    currentDate = date;
+
+    const btnId = typeSeance === 'Seance 1' ? 'btn-s1' : 'btn-s2';
+    const btn   = document.getElementById(btnId);
+    btn.disabled = true;
+    btn.textContent = '⏳ Démarrage…';
 
     try {
-      const res  = await fetch('/demarrer-seance', { method:'POST', headers:authHeaders(), body:JSON.stringify({date}) });
+      const res  = await fetch('/demarrer-seance', {
+        method: 'POST', headers: authHeaders(),
+        body: JSON.stringify({ date, typeSeance })
+      });
       const data = await res.json();
-      if (res.status === 401 || res.status === 403) { logout(); return; }
-      if (!res.ok) return toast(data.error, 'err');
-      afficherQR(data.token, data.matiere, date, typeSeance, data.expiry);
-      document.getElementById('email-result').style.display = 'none';
-      document.getElementById('btn-email').disabled = false;
-      document.getElementById('btn-email').innerHTML = `📨 Envoyer email aux absents de la <span id="label-seance-btn">${typeSeance}</span>`;
-      toast('✅ QR Code actif 15 min');
-    } catch { toast('Erreur réseau.', 'err'); }
+
+      btn.disabled    = false;
+      btn.textContent = typeSeance === 'Seance 1' ? '▶ Démarrer la Séance 1' : '▶ Démarrer la Séance 2';
+
+      if (res.status === 401 || res.status === 403 && !data.error.includes('présence')) {
+        toast(data.error, 'err'); return;
+      }
+      if (!res.ok) { toast(data.error, 'err'); return; }
+
+      // Mettre à jour l'état
+      if (typeSeance === 'Seance 1') etatJour.seance1Ouverte = true;
+      if (typeSeance === 'Seance 2') etatJour.seance2Ouverte = true;
+      appliquerEtat();
+
+      afficherQRSeance(data.token, data.matiere, date, typeSeance, data.expiry);
+      toast(`✅ ${typeSeance} démarrée — QR actif 15 min`);
+
+    } catch { btn.disabled=false; toast('Erreur réseau.','err'); }
   }
 
-  async function renouvelerToken() {
-    if (!currentDate) return;
+  async function renouvelerToken(typeSeance) {
+    const date = currentDate || document.getElementById('date-seance').value;
+    if (!date) return;
     try {
-      const res  = await fetch('/demarrer-seance', { method:'POST', headers:authHeaders(), body:JSON.stringify({date:currentDate}) });
+      const res  = await fetch('/demarrer-seance', {
+        method:'POST', headers:authHeaders(),
+        body: JSON.stringify({ date, typeSeance })
+      });
       const data = await res.json();
-      if (!res.ok) return toast(data.error, 'err');
-      afficherQR(data.token, data.matiere, currentDate, currentType, data.expiry);
+      if (!res.ok) { toast(data.error,'err'); return; }
+      afficherQRSeance(data.token, data.matiere, date, typeSeance, data.expiry);
       toast('🔄 QR renouvelé');
-    } catch { toast('Erreur réseau.', 'err'); }
+    } catch { toast('Erreur réseau.','err'); }
   }
 
-  function afficherQR(tok, matiere, date, typeSeance, expiry) {
+  function afficherQRSeance(tok, matiere, date, typeSeance, exp) {
+    const key  = typeSeance === 'Seance 1' ? 's1' : 's2';
+    const zone = document.getElementById(`qr-${key}-zone`);
+    const div  = document.getElementById(`qrcode-${key}`);
+
     const url = `${location.origin}/etudiant.html?${new URLSearchParams({token:tok,matiere,date,typeSeance})}`;
-    const div = document.getElementById('qrcode');
     div.innerHTML = '';
     new QRCode(div, { text:url, width:200, height:200, colorDark:'#000', colorLight:'#fff', correctLevel:QRCode.CorrectLevel.H });
-    document.getElementById('qr-zone').style.display = 'block';
-    expiryDate = new Date(expiry);
-    lancerTimer();
+    zone.style.display = 'block';
+    expiry[key] = new Date(exp);
+    lancerTimer(key);
   }
 
-  function lancerTimer() {
-    if (timerInterval) clearInterval(timerInterval);
+  function lancerTimer(key) {
+    if (timers[key]) clearInterval(timers[key]);
     const TOTAL = 15 * 60 * 1000;
-    timerInterval = setInterval(() => {
-      const r = expiryDate - Date.now(), pct = Math.max(0,(r/TOTAL)*100);
-      const m = Math.max(0,Math.floor(r/60000)), s = Math.max(0,Math.floor((r%60000)/1000));
-      document.getElementById('timer-fill').style.width = `${pct}%`;
-      if (pct < 20) document.getElementById('timer-fill').style.background = 'linear-gradient(90deg,#ef4444,#f59e0b)';
-      document.getElementById('countdown').textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-      if (r <= 0) { clearInterval(timerInterval); document.getElementById('countdown').textContent = 'EXPIRÉ'; toast('⚠ QR expiré.','err'); }
+    timers[key] = setInterval(() => {
+      const r   = expiry[key] - Date.now();
+      const pct = Math.max(0, (r/TOTAL)*100);
+      const m   = Math.max(0, Math.floor(r/60000));
+      const s   = Math.max(0, Math.floor((r%60000)/1000));
+      const fill = document.getElementById(`fill-${key}`);
+      const cnt  = document.getElementById(`countdown-${key}`);
+      if (fill) fill.style.width = `${pct}%`;
+      if (pct < 20 && fill) fill.style.background = 'linear-gradient(90deg,#ef4444,#f59e0b)';
+      if (cnt) cnt.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+      if (r <= 0) { clearInterval(timers[key]); if(cnt) cnt.textContent='EXPIRÉ'; toast('⚠ QR expiré. Renouvelez.','err'); }
     }, 1000);
   }
 
-  // ── Notifications email
-  async function notifierAbsents() {
-    if (!currentDate || !currentType) return toast('Démarrez d\'abord une séance.','err');
-    const btn = document.getElementById('btn-email');
-    const resDIV = document.getElementById('email-result');
-    btn.disabled = true; btn.textContent = '⏳ Envoi en cours…';
-    resDIV.style.display = 'none';
+  // ══════════════════════════════════════════
+  //  ÉTAPE 4 : FINALISER
+  // ══════════════════════════════════════════
+  async function finaliserSeances() {
+    const date = currentDate || document.getElementById('date-seance').value;
+    if (!date) return toast('Date introuvable.','err');
+
+    const btn = document.getElementById('btn-finaliser');
+    btn.disabled = true;
+    btn.textContent = '⏳ Sauvegarde en cours…';
+
     try {
-      const res  = await fetch('/prof/notifier-absents', { method:'POST', headers:authHeaders(), body:JSON.stringify({date:currentDate, typeSeance:currentType}) });
+      const res  = await fetch('/prof/finaliser-seances', {
+        method:'POST', headers:authHeaders(),
+        body: JSON.stringify({ date })
+      });
       const data = await res.json();
+
+      if (!res.ok) {
+        btn.disabled = false;
+        btn.textContent = '💾 Sauvegarder les 2 séances';
+        toast(data.error,'err'); return;
+      }
+
+      // Succès
+      etatJour.seanceFinalisee = true;
+      appliquerEtat();
+
+      document.getElementById('finaliser-form').style.display = 'none';
+      document.getElementById('finaliser-success').style.display = 'block';
+      document.getElementById('finaliser-details').innerHTML =
+        `<strong>${data.matiere}</strong> — ${data.date}<br>
+         S1 : ${data.presents1}/${data.total} présents &nbsp;·&nbsp;
+         S2 : ${data.presents2}/${data.total} présents`;
+
+      toast('🎉 Séances sauvegardées avec succès !');
+      setTimeout(chargerMesSeances, 1500);
+
+    } catch {
       btn.disabled = false;
-      btn.innerHTML = `📨 Envoyer email aux absents de la <span id="label-seance-btn">${currentType}</span>`;
-      if (!res.ok) { resDIV.className='email-result err'; resDIV.innerHTML=`❌ ${data.error}`; resDIV.style.display='block'; return; }
-      let html = `<strong>${data.message}</strong><br><br>`;
-      if (data.nbEnvoyes > 0)   html += `<span style="color:var(--success)">✅ ${data.nbEnvoyes} envoyé(s)</span><br>`;
-      if (data.nbEchecs > 0)    html += `<span style="color:var(--danger)">❌ ${data.nbEchecs} échoué(s)</span><br>`;
-      if (data.nbSansEmail > 0) html += `<span style="color:var(--warn)">⚠️ ${data.nbSansEmail} sans email</span><br>`;
+      btn.textContent = '💾 Sauvegarder les 2 séances';
+      toast('Erreur réseau.','err');
+    }
+  }
+
+  // ══════════════════════════════════════════
+  //  NOTIFICATIONS EMAIL
+  // ══════════════════════════════════════════
+  async function notifierAbsents(typeSeance, resultId, btnId) {
+    const date = currentDate || document.getElementById('date-seance').value;
+    if (!date) return toast('Date introuvable.','err');
+
+    const btn    = document.getElementById(btnId);
+    const resDIV = document.getElementById(resultId);
+    btn.disabled = true; btn.textContent = '⏳ Envoi…';
+    resDIV.style.display = 'none';
+
+    try {
+      const res  = await fetch('/prof/notifier-absents', {
+        method:'POST', headers:authHeaders(),
+        body: JSON.stringify({ date, typeSeance })
+      });
+      const data = await res.json();
+
+      btn.disabled = false;
+      btn.textContent = `📨 Envoyer emails absents ${typeSeance}`;
+
+      if (!res.ok) {
+        resDIV.className='email-result err'; resDIV.innerHTML=`❌ ${data.error}`;
+        resDIV.style.display='block'; return;
+      }
+
+      let html = `<strong>${data.message}</strong><br>`;
+      if (data.nbEnvoyes>0)   html+=`<span style="color:var(--success)">✅ ${data.nbEnvoyes} envoyé(s)</span><br>`;
+      if (data.nbEchecs>0)    html+=`<span style="color:var(--danger)">❌ ${data.nbEchecs} échoué(s)</span><br>`;
+      if (data.nbSansEmail>0) html+=`<span style="color:var(--warn)">⚠️ ${data.nbSansEmail} sans email</span>`;
+
       if (data.details?.length > 0) {
-        html += `<div style="border-top:1px solid rgba(255,255,255,0.07);margin:0.75rem 0;padding-top:0.75rem;">`;
+        html += `<div style="border-top:1px solid rgba(255,255,255,0.07);margin:0.6rem 0;padding-top:0.6rem;">`;
         data.details.forEach(d => {
-          const ic = d.statut==='envoyé'?'✅':'❌';
+          const ic  = d.statut==='envoyé'?'✅':'❌';
           const col = d.statut==='envoyé'?'var(--success)':'var(--danger)';
-          html += `<div class="email-detail-row"><span>${ic} ${d.nom}</span><span style="color:${col};font-size:0.65rem;">${d.statut==='envoyé'?'Envoyé':'Échec'}</span></div>`;
+          html += `<div class="email-row"><span>${ic} ${d.nom}</span><span style="color:${col};font-size:0.65rem;">${d.statut==='envoyé'?'Envoyé':'Échec'}</span></div>`;
         });
         html += '</div>';
       }
+
       const type = data.nbEchecs>0&&data.nbEnvoyes===0?'err':data.nbEchecs>0?'warn':'ok';
       resDIV.className=`email-result ${type}`; resDIV.innerHTML=html; resDIV.style.display='block';
       toast(data.message, data.nbEnvoyes>0?'ok':'warn');
-      setTimeout(chargerMesSeances, 2000);
+
     } catch {
-      btn.disabled=false; btn.innerHTML=`📨 Envoyer email aux absents de la <span id="label-seance-btn">${currentType}</span>`;
+      btn.disabled=false; btn.textContent=`📨 Envoyer emails absents ${typeSeance}`;
       resDIV.className='email-result err'; resDIV.innerHTML='❌ Erreur réseau.'; resDIV.style.display='block';
     }
   }
 
-  // ── Logs
-  async function toggleLogs() {
-    const panel = document.getElementById('logs-panel');
-    if (panel.style.display==='block') { panel.style.display='none'; return; }
-    if (!currentDate) return;
+  // ══════════════════════════════════════════
+  //  LOGS DE SÉCURITÉ
+  // ══════════════════════════════════════════
+  async function toggleLogs(typeSeance) {
+    const key   = typeSeance === 'Seance 1' ? 's1' : 's2';
+    const panel = document.getElementById(`logs-${key}`);
+    if (panel.style.display === 'block') { panel.style.display='none'; return; }
+
+    const date = currentDate || document.getElementById('date-seance').value;
+    if (!date) return;
+
     try {
-      const res  = await fetch(`/securite-logs?date=${currentDate}`, { headers:authHeaders() });
+      const res  = await fetch(`/securite-logs?date=${date}`, { headers:authHeaders() });
       const data = await res.json();
-      const list = document.getElementById('logs-list');
-      list.innerHTML='';
-      if (!data.tentativesBloquees||data.tentativesBloquees.length===0) {
-        list.innerHTML='<div style="font-family:var(--mono);font-size:0.72rem;color:var(--success);padding:0.4rem;">✅ Aucune tentative suspecte.</div>';
+      const list = document.getElementById(`logs-list-${key}`);
+      list.innerHTML = '';
+
+      if (!data.tentativesBloquees || data.tentativesBloquees.length === 0) {
+        list.innerHTML = '<div style="font-family:var(--mono);font-size:0.72rem;color:var(--success);padding:0.4rem;">✅ Aucune tentative suspecte.</div>';
       } else {
-        data.tentativesBloquees.slice(-15).reverse().forEach(t=>{
-          const d=document.createElement('div'); d.className='log-entry';
+        data.tentativesBloquees.slice(-10).reverse().forEach(t => {
+          const d = document.createElement('div'); d.className='log-entry';
           d.innerHTML=`<span>${t.ip} — ${t.raison}</span><span class="log-time">${new Date(t.date).toLocaleTimeString()}</span>`;
           list.appendChild(d);
         });
       }
-      panel.style.display='block';
+      panel.style.display = 'block';
     } catch { toast('Impossible de charger les logs.','err'); }
   }
 
-  // ─────────────────────────────────────────
-  //  EXPORT EXCEL
-  // ─────────────────────────────────────────
-  function exporterExcel(seance) {
+  // ══════════════════════════════════════════
+  //  EXPORT EXCEL / PDF
+  // ══════════════════════════════════════════
+  function exporterExcelAujourdhui() {
+    if (!seanceData) return;
+    exporterExcel(seanceData);
+  }
+
+  function exporterPDFAujourdhui() {
+    if (!seanceData) return;
+    exporterPDF(seanceData);
+  }
+
+  function exporterExcel(s) {
     const wb = XLSX.utils.book_new();
-
-    // Feuille 1 — Séance 1
-    const dataS1 = [
-      ['EPT — Liste de Présence'],
-      [`Matière : ${seance.matiere}`],
-      [`Date : ${seance.date}`],
-      [`Professeur : ${seance.profNom || profNom}`],
-      [`Séance : Séance 1`],
-      [],
-      ['N°', 'Nom de l\'étudiant', 'Email', 'Statut Séance 1']
-    ];
-    seance.etudiants.forEach((e, i) => {
-      dataS1.push([i+1, e.nom, e.email || '—', e.s1]);
-    });
-    const wsS1 = XLSX.utils.aoa_to_sheet(dataS1);
-    wsS1['!cols'] = [{wch:5},{wch:25},{wch:35},{wch:15}];
-    XLSX.utils.book_append_sheet(wb, wsS1, 'Séance 1');
-
-    // Feuille 2 — Séance 2
-    const dataS2 = [
-      ['EPT — Liste de Présence'],
-      [`Matière : ${seance.matiere}`],
-      [`Date : ${seance.date}`],
-      [`Professeur : ${seance.profNom || profNom}`],
-      [`Séance : Séance 2`],
-      [],
-      ['N°', 'Nom de l\'étudiant', 'Email', 'Statut Séance 2']
-    ];
-    seance.etudiants.forEach((e, i) => {
-      dataS2.push([i+1, e.nom, e.email || '—', e.s2]);
-    });
-    const wsS2 = XLSX.utils.aoa_to_sheet(dataS2);
-    wsS2['!cols'] = [{wch:5},{wch:25},{wch:35},{wch:15}];
-    XLSX.utils.book_append_sheet(wb, wsS2, 'Séance 2');
-
-    // Feuille 3 — Résumé complet
-    const dataResume = [
-      ['EPT — Résumé Complet de Présence'],
-      [`Matière : ${seance.matiere}`],
-      [`Date : ${seance.date}`],
-      [`Professeur : ${seance.profNom || profNom}`],
-      [],
-      ['N°', 'Nom de l\'étudiant', 'Email', 'Séance 1', 'Séance 2']
-    ];
-    seance.etudiants.forEach((e, i) => {
-      dataResume.push([i+1, e.nom, e.email || '—', e.s1, e.s2]);
-    });
-
-    // Statistiques
-    const pS1 = seance.etudiants.filter(e => e.s1==="Present").length;
-    const pS2 = seance.etudiants.filter(e => e.s2==="Present").length;
-    const total = seance.etudiants.length;
-    dataResume.push([]);
-    dataResume.push(['STATISTIQUES']);
-    dataResume.push(['Total étudiants', total]);
-    dataResume.push(['Présents Séance 1', pS1, '', `${Math.round((pS1/total)*100)}%`]);
-    dataResume.push(['Absents Séance 1', total-pS1, '', `${Math.round(((total-pS1)/total)*100)}%`]);
-    dataResume.push(['Présents Séance 2', pS2, '', `${Math.round((pS2/total)*100)}%`]);
-    dataResume.push(['Absents Séance 2', total-pS2, '', `${Math.round(((total-pS2)/total)*100)}%`]);
-
-    const wsResume = XLSX.utils.aoa_to_sheet(dataResume);
-    wsResume['!cols'] = [{wch:5},{wch:25},{wch:35},{wch:15},{wch:15}];
-    XLSX.utils.book_append_sheet(wb, wsResume, 'Résumé');
-
-    // Télécharger
-    XLSX.writeFile(wb, `presence_${seance.matiere}_${seance.date}.xlsx`);
-    toast('✅ Fichier Excel téléchargé !');
+    const data = [['EPT — Présence'],['Matière : '+s.matiere],['Date : '+s.date],['Professeur : '+s.profNom],['Statut : '+(s.statut==='finalisee'?'Finalisée':'En cours')],[],['N°','Nom','Email','Séance 1','Séance 2']];
+    (s.etudiants||[]).forEach((e,i)=>data.push([i+1,e.nom,e.email||'—',e.s1,e.s2]));
+    const ws=XLSX.utils.aoa_to_sheet(data); ws['!cols']=[{wch:5},{wch:28},{wch:35},{wch:12},{wch:12}];
+    XLSX.utils.book_append_sheet(wb,ws,'Présence');
+    XLSX.writeFile(wb,`presence_${s.matiere}_${s.date}.xlsx`);
+    toast('✅ Excel téléchargé !');
   }
 
-  // ─────────────────────────────────────────
-  //  EXPORT PDF
-  // ─────────────────────────────────────────
-  function exporterPDF(seance) {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-
-    const pS1    = seance.etudiants.filter(e => e.s1==="Present").length;
-    const pS2    = seance.etudiants.filter(e => e.s2==="Present").length;
-    const total  = seance.etudiants.length;
-    const profN  = seance.profNom || profNom;
-
-    // ── EN-TÊTE
-    doc.setFillColor(7, 9, 15);
-    doc.rect(0, 0, 210, 40, 'F');
-    doc.setTextColor(0, 212, 255);
-    doc.setFontSize(18);
-    doc.setFont('helvetica', 'bold');
-    doc.text('EPT — Liste de Présence', 105, 18, { align: 'center' });
-    doc.setTextColor(100, 116, 139);
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    doc.text('École Polytechnique de Tunisie · Système automatique de présence', 105, 28, { align: 'center' });
-
-    // ── INFOS SÉANCE
-    doc.setFillColor(15, 22, 35);
-    doc.rect(0, 40, 210, 32, 'F');
-    doc.setTextColor(226, 232, 240);
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'bold');
-    doc.text(`${seance.matiere}`, 15, 52);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
-    doc.setTextColor(100, 116, 139);
-    doc.text(`Date : ${seance.date}`, 15, 61);
-    doc.text(`Professeur : ${profN}`, 80, 61);
-    doc.text(`Généré le : ${new Date().toLocaleString('fr-FR')}`, 15, 68);
-
-    // ── STATISTIQUES
-    doc.setFillColor(26, 37, 64);
-    doc.rect(0, 72, 210, 18, 'F');
-    doc.setTextColor(0, 212, 255);
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'bold');
-    doc.text(`TOTAL : ${total} étudiants`, 15, 82);
-    doc.setTextColor(16, 185, 129);
-    doc.text(`S1 — Présents : ${pS1}  Absents : ${total-pS1}`, 70, 82);
-    doc.setTextColor(124, 58, 237);
-    doc.text(`S2 — Présents : ${pS2}  Absents : ${total-pS2}`, 145, 82);
-
-    // ── TABLEAU
-    const rows = seance.etudiants.map((e, i) => [
-      i+1,
-      e.nom,
-      e.s1 === "Present" ? "✓ Présent" : "✗ Absent",
-      e.s2 === "Present" ? "✓ Présent" : "✗ Absent"
-    ]);
-
+  function exporterPDF(s) {
+    const {jsPDF}=window.jspdf; const doc=new jsPDF();
+    doc.setFillColor(7,9,15); doc.rect(0,0,210,38,'F');
+    doc.setTextColor(0,212,255); doc.setFontSize(16); doc.setFont('helvetica','bold');
+    doc.text('EPT — Liste de Présence',105,14,{align:'center'});
+    doc.setTextColor(226,232,240); doc.setFontSize(10); doc.setFont('helvetica','normal');
+    doc.text(`${s.matiere} · ${s.date} · ${s.profNom||'—'}`,105,24,{align:'center'});
+    doc.setTextColor(100,116,139); doc.setFontSize(8);
+    doc.text(`Généré le ${new Date().toLocaleString('fr-FR')}`,105,32,{align:'center'});
     doc.autoTable({
-      startY: 95,
-      head: [['N°', 'Nom de l\'étudiant', 'Séance 1', 'Séance 2']],
-      body: rows,
-      theme: 'grid',
-      headStyles: {
-        fillColor: [7, 9, 15],
-        textColor: [0, 212, 255],
-        fontStyle: 'bold',
-        fontSize: 9,
-        halign: 'center'
-      },
-      bodyStyles: {
-        fillColor: [15, 22, 35],
-        textColor: [226, 232, 240],
-        fontSize: 9,
-        lineColor: [26, 37, 64]
-      },
-      alternateRowStyles: {
-        fillColor: [11, 16, 26]
-      },
-      columnStyles: {
-        0: { halign: 'center', cellWidth: 12 },
-        1: { cellWidth: 80 },
-        2: { halign: 'center', cellWidth: 45 },
-        3: { halign: 'center', cellWidth: 45 }
-      },
-      didParseCell: (data) => {
-        if (data.section === 'body') {
-          if (data.column.index === 2 || data.column.index === 3) {
-            if (data.cell.raw && data.cell.raw.includes('Présent')) {
-              data.cell.styles.textColor = [16, 185, 129];
-            } else if (data.cell.raw && data.cell.raw.includes('Absent')) {
-              data.cell.styles.textColor = [239, 68, 68];
-            }
-          }
-        }
-      }
+      startY:43, head:[['N°','Nom','Séance 1','Séance 2']],
+      body:(s.etudiants||[]).map((e,i)=>[i+1,e.nom,e.s1==="Present"?"✓ Présent":"✗ Absent",e.s2==="Present"?"✓ Présent":"✗ Absent"]),
+      theme:'grid',
+      headStyles:{fillColor:[7,9,15],textColor:[0,212,255],fontStyle:'bold',fontSize:9,halign:'center'},
+      bodyStyles:{fillColor:[15,22,35],textColor:[226,232,240],fontSize:9,lineColor:[26,37,64]},
+      alternateRowStyles:{fillColor:[11,16,26]},
+      columnStyles:{0:{halign:'center',cellWidth:12},2:{halign:'center'},3:{halign:'center'}},
+      didParseCell:(d)=>{if(d.section==='body'&&(d.column.index===2||d.column.index===3)){if(d.cell.raw?.includes('Présent'))d.cell.styles.textColor=[16,185,129];else if(d.cell.raw?.includes('Absent'))d.cell.styles.textColor=[239,68,68];}}
     });
-
-    // ── FOOTER
-    const pageH = doc.internal.pageSize.height;
-    doc.setFillColor(7, 9, 15);
-    doc.rect(0, pageH-15, 210, 15, 'F');
-    doc.setTextColor(51, 65, 85);
-    doc.setFontSize(7);
-    doc.text('© EPT — Système de Présence Automatique · Document généré automatiquement', 105, pageH-6, { align: 'center' });
-
-    doc.save(`presence_${seance.matiere}_${seance.date}.pdf`);
-    toast('✅ Fichier PDF téléchargé !');
+    doc.save(`presence_${s.matiere}_${s.date}.pdf`);
+    toast('✅ PDF téléchargé !');
   }
 
-  // ─────────────────────────────────────────
-  //  CHARGER MES SÉANCES
-  // ─────────────────────────────────────────
+  // ══════════════════════════════════════════
+  //  ARCHIVES — MES SÉANCES PASSÉES
+  // ══════════════════════════════════════════
   async function chargerMesSeances() {
     try {
-      const res    = await fetch('/prof/mes-seances', { headers: authHeaders() });
+      const res    = await fetch('/prof/mes-seances', { headers:authHeaders() });
       if (res.status===401||res.status===403) { logout(); return; }
       const seances = await res.json();
-      document.getElementById('loading').style.display = 'none';
-      const cont = document.getElementById('mes-seances');
+      const cont   = document.getElementById('mes-seances');
+      const label  = document.getElementById('archives-label');
       cont.innerHTML = '';
 
-      if (!seances||seances.length===0) {
-        cont.innerHTML = '<div style="text-align:center;font-family:var(--mono);font-size:0.78rem;color:var(--muted);padding:2rem;">Aucune séance enregistrée.</div>';
-        return;
-      }
+      if (!seances || seances.length === 0) return;
+      label.style.display = 'block';
 
-      seances.forEach((s, idx) => {
-        const etu   = s.etudiants || [];
-        const pS1   = etu.filter(e => e.s1==="Present").length;
-        const pS2   = etu.filter(e => e.s2==="Present").length;
-        const aS1   = etu.filter(e => e.s1==="Absent").length;
-        const aS2   = etu.filter(e => e.s2==="Absent").length;
+      // Sauvegarder la séance d'aujourd'hui pour l'export
+      const today = new Date().toISOString().split('T')[0];
+      seanceData  = seances.find(s => s.date === today) || seances[0];
+
+      seances.forEach(s => {
+        const etu   = s.etudiants||[];
+        const pS1   = etu.filter(e=>e.s1==="Present").length;
+        const pS2   = etu.filter(e=>e.s2==="Present").length;
         let dateAff = s.date;
-        try { dateAff = new Date(s.date+'T00:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}); } catch {}
+        try{dateAff=new Date(s.date+'T00:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});}catch{}
 
-        const emails = s.emailsEnvoyes || [];
-        const dernierEmail = emails.length>0 ? emails[emails.length-1] : null;
+        const dernierEmail = s.emailsEnvoyes?.length>0 ? s.emailsEnvoyes[s.emailsEnvoyes.length-1] : null;
+        const statutBadge  = s.statut==='finalisee'
+          ? '<span class="badge badge-fin">✓ Finalisée</span>'
+          : '<span class="badge badge-actif">⏳ En cours</span>';
 
-        const lignes = etu.map(e => {
-          const cs1 = e.s1==="Present"?'badge-ok':'badge-absent';
-          const cs2 = e.s2==="Present"?'badge-ok':'badge-absent';
-          const emailBadge = e.email
-            ? `<br><span class="badge badge-email">📧 ${e.email}</span>`
-            : `<br><span style="color:var(--muted);font-size:0.62rem;font-family:var(--mono);">sans email</span>`;
-          return `<tr>
-            <td>${e.nom}${emailBadge}</td>
+        const lignes = etu.map(e=>{
+          const cs1=e.s1==="Present"?'badge-ok':'badge-absent';
+          const cs2=e.s2==="Present"?'badge-ok':'badge-absent';
+          return `<tr><td>${e.nom}${e.email?`<br><span style="color:var(--muted);font-size:0.62rem">📧 ${e.email}</span>`:''}</td>
             <td><span class="badge ${cs1}">${e.s1==="Present"?'✓':''} ${e.s1}</span></td>
-            <td><span class="badge ${cs2}">${e.s2==="Present"?'✓':''} ${e.s2}</span></td>
-          </tr>`;
+            <td><span class="badge ${cs2}">${e.s2==="Present"?'✓':''} ${e.s2}</span></td></tr>`;
         }).join('');
 
-        const card = document.createElement('div');
-        card.className = 'seance-card';
-        card.innerHTML = `
+        const idx  = seances.indexOf(s);
+        const card = document.createElement('div'); card.className='seance-card';
+        card.innerHTML=`
           <div class="seance-head">
-            <span class="seance-head-title">${s.matiere}</span>
+            <div><span class="seance-head-title">${s.matiere}</span> ${statutBadge}</div>
             <span class="seance-head-date">📅 ${dateAff}</span>
           </div>
           <div class="seance-stats">
             <span class="stat"><strong>${etu.length}</strong> étudiants</span>
             <span class="stat"><strong style="color:var(--success)">${pS1}</strong> présents S1</span>
-            <span class="stat"><strong style="color:var(--danger)">${aS1}</strong> absents S1</span>
             <span class="stat"><strong style="color:var(--success)">${pS2}</strong> présents S2</span>
-            <span class="stat"><strong style="color:var(--danger)">${aS2}</strong> absents S2</span>
           </div>
-
-          <!-- BOUTONS EXPORT -->
           <div class="export-row">
-            <span class="export-label">📥 Exporter :</span>
-            <button class="btn btn-excel" onclick="exporterExcel(seancesData[${idx}])">
-              📊 Excel
-            </button>
-            <button class="btn btn-pdf" onclick="exporterPDF(seancesData[${idx}])">
-              📄 PDF
-            </button>
+            <span class="export-label">📥 Export :</span>
+            <button class="btn btn-excel btn-sm" onclick="exporterExcel(seancesGlobales[${idx}])">📊 Excel</button>
+            <button class="btn btn-pdf btn-sm"   onclick="exporterPDF(seancesGlobales[${idx}])">📄 PDF</button>
           </div>
-
-          ${dernierEmail ? `<div style="padding:0.5rem 1rem;border-bottom:1px solid var(--border);">
-            <span class="badge" style="background:rgba(59,130,246,0.1);color:var(--email);border:1px solid rgba(59,130,246,0.2);font-size:0.62rem;">
-              📧 ${dernierEmail.nbEnvoyes} email(s) — ${new Date(dernierEmail.envoyeA).toLocaleString('fr-FR')} — ${dernierEmail.typeSeance}
-            </span>
-          </div>` : ''}
-
+          ${dernierEmail?`<div style="padding:0.4rem 1rem;border-bottom:1px solid var(--border);">
+            <span style="font-family:var(--mono);font-size:0.62rem;color:var(--email);">📧 ${dernierEmail.nbEnvoyes} email(s) — ${new Date(dernierEmail.envoyeA).toLocaleString('fr-FR')} — ${dernierEmail.typeSeance}</span>
+          </div>`:''}
           <div style="overflow-x:auto;">
-            <table>
-              <thead><tr><th>Nom & Email</th><th>Séance 1</th><th>Séance 2</th></tr></thead>
-              <tbody>${lignes}</tbody>
-            </table>
+            <table><thead><tr><th>Nom</th><th>Séance 1</th><th>Séance 2</th></tr></thead>
+            <tbody>${lignes}</tbody></table>
           </div>`;
         cont.appendChild(card);
       });
 
-      // Stocker les données pour l'export
-      window.seancesData = seances;
+      window.seancesGlobales = seances;
 
-    } catch {
-      document.getElementById('loading').textContent = '❌ Erreur de chargement.';
-    }
+    } catch { console.error('Erreur chargement séances'); }
   }
 
-  chargerMesSeances();
+  // ── Démarrage
+  chargerEtatJour();
 </script>
 </body>
 </html>
