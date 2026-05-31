@@ -69,6 +69,10 @@ const SeanceSchema = new mongoose.Schema({
   tokenExpiry: Date,
   etudiants:   Array,  // { nom, email, s1, s2 }
   ipUtilisees: { s1: [String], s2: [String] },
+  // Workflow : 'active' → séances en cours | 'finalisee' → sauvegardées
+  statut:          { type: String, default: 'active' },
+  // Quelles séances ont été ouvertes (QR généré)
+  seancesOuvertes: { s1: { type: Boolean, default: false }, s2: { type: Boolean, default: false } },
   tentativesBloquees: [{
     ip:    String,
     raison: String,
@@ -364,19 +368,77 @@ app.post('/prof/pointer-presence', authProf, async (req, res) => {
 });
 
 // ─────────────────────────────────────────────
+//  ROUTE 4b : ÉTAT DE LA JOURNÉE DU PROF
+//  GET /prof/etat-journee
+//  Retourne : presencePointee, seanceActive, seance1Ouverte, seance2Ouverte, seanceFinalisee
+// ─────────────────────────────────────────────
+app.get('/prof/etat-journee', authProf, async (req, res) => {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+
+    // Vérifier si présence du prof pointée aujourd'hui
+    const presencePointee = !!(await PresenceProf.findOne({ profId: req.prof.id, date: today }));
+
+    // Vérifier s'il y a des séances non finalisées d'un AUTRE jour (bloque)
+    const seanceNonFinaliseeAutreJour = await Seance.findOne({
+      profId: req.prof.id,
+      date:   { $ne: today },
+      statut: 'active'
+    });
+
+    // Séance d'aujourd'hui
+    const seanceAujourdhui = await Seance.findOne({ matiere: req.prof.matiere, date: today, profId: req.prof.id });
+
+    res.json({
+      presencePointee,
+      seanceNonFinaliseeAutreJour: seanceNonFinaliseeAutreJour
+        ? { date: seanceNonFinaliseeAutreJour.date, matiere: seanceNonFinaliseeAutreJour.matiere }
+        : null,
+      seance1Ouverte:   seanceAujourdhui?.seancesOuvertes?.s1 || false,
+      seance2Ouverte:   seanceAujourdhui?.seancesOuvertes?.s2 || false,
+      seanceFinalisee:  seanceAujourdhui?.statut === 'finalisee' || false,
+      seanceId:         seanceAujourdhui?._id || null
+    });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ─────────────────────────────────────────────
 //  ROUTE 5 : DÉMARRER UNE SÉANCE
 // ─────────────────────────────────────────────
 app.post('/demarrer-seance', authProf, async (req, res) => {
   try {
-    const { date } = req.body;
+    const { date, typeSeance } = req.body;
     const matiere  = req.prof.matiere;
-    if (!date) return res.status(400).json({ error: "Date requise." });
+    if (!date || !typeSeance) return res.status(400).json({ error: "Date et type de séance requis." });
+
+    const today = new Date().toISOString().split('T')[0];
+
+    // ── 1. Vérifier que la présence du prof est pointée aujourd'hui
+    const presencePointee = await PresenceProf.findOne({ profId: req.prof.id, date: today });
+    if (!presencePointee)
+      return res.status(403).json({ error: "Vous devez d'abord valider votre présence du jour avant de démarrer une séance." });
+
+    // ── 2. Vérifier qu'il n'y a pas de séances non finalisées d'un autre jour
+    const seanceNonFinalisee = await Seance.findOne({
+      profId: req.prof.id,
+      date:   { $ne: date },
+      statut: 'active'
+    });
+    if (seanceNonFinalisee)
+      return res.status(403).json({
+        error: `Vous avez des séances non sauvegardées du ${seanceNonFinalisee.date}. Finalisez-les avant d'en démarrer de nouvelles.`
+      });
 
     const professorIP = getClientIP(req);
     const { token, expiry } = genererToken(15);
 
-    let seance = await Seance.findOne({ matiere, date });
+    let seance = await Seance.findOne({ matiere, date, profId: req.prof.id });
+
     if (!seance) {
+      // ── 3. Séance 2 ne peut pas démarrer sans Séance 1
+      if (typeSeance === "Seance 2")
+        return res.status(403).json({ error: "Vous devez d'abord démarrer la Séance 1." });
+
       const inscrits = await EtudiantOfficiel.find();
       if (inscrits.length === 0)
         return res.status(400).json({ error: "Aucun étudiant dans la base." });
@@ -389,16 +451,78 @@ app.post('/demarrer-seance', authProf, async (req, res) => {
         matiere, date, profId: req.prof.id, profNom: req.prof.nom,
         professorIP, token, tokenExpiry: expiry,
         etudiants, ipUtilisees: { s1: [], s2: [] },
-        tentativesBloquees: [], emailsEnvoyes: []
+        tentativesBloquees: [], emailsEnvoyes: [],
+        statut: 'active',
+        seancesOuvertes: { s1: false, s2: false }
       });
     } else {
+      // ── 4. Séance finalisée → ne peut plus être modifiée
+      if (seance.statut === 'finalisee')
+        return res.status(403).json({ error: "Ces séances sont déjà finalisées et sauvegardées." });
+
+      // ── 5. Séance 2 nécessite Séance 1 ouverte
+      if (typeSeance === "Seance 2" && !seance.seancesOuvertes?.s1)
+        return res.status(403).json({ error: "Vous devez d'abord démarrer la Séance 1." });
+
       seance.professorIP = professorIP;
       seance.token       = token;
       seance.tokenExpiry = expiry;
     }
 
+    // Marquer la séance comme ouverte
+    if (!seance.seancesOuvertes) seance.seancesOuvertes = { s1: false, s2: false };
+    if (typeSeance === "Seance 1") seance.seancesOuvertes.s1 = true;
+    if (typeSeance === "Seance 2") seance.seancesOuvertes.s2 = true;
+
+    seance.markModified('seancesOuvertes');
     await seance.save();
-    res.json({ message: "Séance prête.", token, expiry: expiry.toISOString(), matiere });
+
+    res.json({
+      message:    "Séance prête.",
+      token,
+      expiry:     expiry.toISOString(),
+      matiere,
+      typeSeance,
+      s1Ouverte:  seance.seancesOuvertes.s1,
+      s2Ouverte:  seance.seancesOuvertes.s2
+    });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ─────────────────────────────────────────────
+//  ROUTE 5b : FINALISER LES 2 SÉANCES
+//  POST /prof/finaliser-seances
+//  Body : { date }
+// ─────────────────────────────────────────────
+app.post('/prof/finaliser-seances', authProf, async (req, res) => {
+  try {
+    const { date } = req.body;
+    if (!date) return res.status(400).json({ error: "Date requise." });
+
+    const seance = await Seance.findOne({ matiere: req.prof.matiere, date, profId: req.prof.id });
+    if (!seance)
+      return res.status(404).json({ error: "Séance introuvable." });
+
+    if (seance.statut === 'finalisee')
+      return res.status(409).json({ error: "Ces séances sont déjà finalisées." });
+
+    if (!seance.seancesOuvertes?.s1 || !seance.seancesOuvertes?.s2)
+      return res.status(403).json({ error: "Vous devez démarrer les 2 séances avant de finaliser." });
+
+    seance.statut = 'finalisee';
+    await seance.save();
+
+    const presents1 = seance.etudiants.filter(e => e.s1 === "Present").length;
+    const presents2 = seance.etudiants.filter(e => e.s2 === "Present").length;
+    const total     = seance.etudiants.length;
+
+    console.log(`✅ Séances finalisées : ${req.prof.matiere} | ${date} | S1: ${presents1}/${total} | S2: ${presents2}/${total}`);
+
+    res.json({
+      message:   "✅ Les 2 séances ont été sauvegardées avec succès !",
+      presents1, presents2, total,
+      date,      matiere: req.prof.matiere
+    });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -542,17 +666,6 @@ app.get('/prof/mes-seances', authProf, async (req, res) => {
 });
 
 // ─────────────────────────────────────────────
-//  ROUTE 9B : VÉRIFIER MA PRÉSENCE DU JOUR
-// ─────────────────────────────────────────────
-app.get('/prof/ma-presence', authProf, async (req, res) => {
-  try {
-    const date = new Date().toISOString().split('T')[0];
-    const presence = await PresenceProf.findOne({ profId: req.prof.id, date });
-    res.json({ presente: !!presence, heure: presence?.heure || null });
-  } catch (err) { res.status(500).json({ error: err.message }); }
-});
-
-// ─────────────────────────────────────────────
 //  ROUTE 9 : LOGS SÉCURITÉ
 // ─────────────────────────────────────────────
 app.get('/securite-logs', authProf, async (req, res) => {
@@ -605,6 +718,70 @@ app.get('/admin/stats', authAdmin, async (req, res) => {
       (s.emailsEnvoyes || []).forEach(n => { totalEmails += n.nbEnvoyes; });
     });
     res.json({ nbProfs, nbSeances, nbPresencesProfs, totalPresentsS1, totalPresentsS2, totalEtudiants, totalEmails });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ─────────────────────────────────────────────
+//  ROUTES ADMIN — GESTION ÉTUDIANTS (CRUD)
+// ─────────────────────────────────────────────
+
+// GET — Liste tous les étudiants
+app.get('/admin/etudiants', authAdmin, async (req, res) => {
+  try {
+    const data = await EtudiantOfficiel.find().sort({ nom: 1 });
+    res.json(data);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// POST — Ajouter un étudiant
+app.post('/admin/etudiants', authAdmin, async (req, res) => {
+  try {
+    const { nom, email, classe } = req.body;
+    if (!nom) return res.status(400).json({ error: "Le nom est obligatoire." });
+
+    // Vérifier doublon
+    const existe = await EtudiantOfficiel.findOne({ nom: nom.trim().toLowerCase() });
+    if (existe) return res.status(409).json({ error: "Un étudiant avec ce nom existe déjà." });
+
+    const etudiant = new EtudiantOfficiel({
+      nom:    nom.trim(),
+      email:  email?.trim().toLowerCase() || null,
+      classe: classe?.trim() || "Générale"
+    });
+    await etudiant.save();
+    console.log(`✅ Étudiant ajouté : ${nom}`);
+    res.status(201).json({ message: "Étudiant ajouté avec succès.", etudiant });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// PUT — Modifier un étudiant
+app.put('/admin/etudiants/:id', authAdmin, async (req, res) => {
+  try {
+    const { nom, email, classe } = req.body;
+    if (!nom) return res.status(400).json({ error: "Le nom est obligatoire." });
+
+    const etudiant = await EtudiantOfficiel.findByIdAndUpdate(
+      req.params.id,
+      {
+        nom:    nom.trim(),
+        email:  email?.trim().toLowerCase() || null,
+        classe: classe?.trim() || "Générale"
+      },
+      { new: true }
+    );
+    if (!etudiant) return res.status(404).json({ error: "Étudiant introuvable." });
+    console.log(`✏️ Étudiant modifié : ${nom}`);
+    res.json({ message: "Étudiant modifié avec succès.", etudiant });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// DELETE — Supprimer un étudiant
+app.delete('/admin/etudiants/:id', authAdmin, async (req, res) => {
+  try {
+    const etudiant = await EtudiantOfficiel.findByIdAndDelete(req.params.id);
+    if (!etudiant) return res.status(404).json({ error: "Étudiant introuvable." });
+    console.log(`🗑️ Étudiant supprimé : ${etudiant.nom}`);
+    res.json({ message: `Étudiant "${etudiant.nom}" supprimé avec succès.` });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
